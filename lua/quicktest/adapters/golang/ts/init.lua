@@ -49,8 +49,6 @@ end
 ---@param cursor_pos integer[]
 ---@return string?
 function M.get_current_func_name(bufnr, cursor_pos)
-  bufnr = bufnr or 0
-
   local node = vim.treesitter.get_node({ bufnr = bufnr, pos = cursor_pos })
   if not node then
     return
@@ -84,7 +82,7 @@ function M.get_func_names(bufnr)
 
   for id, node, _ in query:iter_captures(root, bufnr, 0, -1) do
     if query.captures[id] == "func_name" then
-      table.insert(out, vim.treesitter.get_node_text(node, 0))
+      table.insert(out, vim.treesitter.get_node_text(node, bufnr))
     end
   end
 
@@ -133,39 +131,6 @@ function M.get_func_def_line_no(bufnr, name)
       return row
     end
   end
-end
-
----@param bufnr integer
----@return string?
-function M.get_tbl_testcase_name(bufnr)
-  local root = get_root_node(bufnr)
-  if not root then
-    return
-  end
-
-  local query = vim.treesitter.query.parse("go", M.query_tbl_testcase_name)
-  local curr_row, _ = unpack(vim.api.nvim_win_get_cursor(0))
-
-  for _, match, _ in query:iter_matches(root, bufnr, 0, -1) do
-    local tc_name = nil
-
-    for id, node in pairs(match) do
-      local name = query.captures[id]
-
-      if name == "test.name" then
-        tc_name = vim.treesitter.get_node_text(node, bufnr)
-      end
-
-      if name == "test.block" then
-        local start_row, _, end_row, _ = node:range()
-        if curr_row >= start_row and curr_row <= end_row then
-          return tc_name
-        end
-      end
-    end
-  end
-
-  return nil
 end
 
 ---@param bufnr integer

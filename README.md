@@ -14,8 +14,6 @@ I like using Neotest, but there are several features that I really miss:
 
 If these features resonate with you, Quicktest might be just what you need!
 
-## How it looks
-
 ## Supported languages
 
 Right now only `go` is supported! Feel free to open PR to add other integrations.
