@@ -1,5 +1,8 @@
 # Quicktest
 
+![Example](https://github.com/quolpr/quicktest.nvim/assets/7958527/b3629bc9-2886-468c-a6e2-6b826dc404d0)
+
+
 ## Motivation
 I like using Neotest, but there are several features that I really miss:
 
