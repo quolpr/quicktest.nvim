@@ -21,7 +21,9 @@ If these features resonate with you, Quicktest might be just what you need!
 - **Contextual Test Triggering:** Run tests directly from where your cursor is located or execute all tests in the entire file.
 - **Flexible Test Reruns:** Rerun tests from any location, automatically opening a popup or using an existing split view if it's open.
 - **Live-Scrolling Results:** Continuously scroll through test results as they are generated.
+- **Real-Time Feedback:** View the results of tests immediately as they run, without waiting for the completion of the test suite.
 - **Test Duration Timer:** Display a timer to monitor the duration of ongoing tests.
+- **Adaptive Display Options:** Instantly displays running test in a popup or uses a split view if already open, adapting to your current setup.
 
 ## Supported languages
 
