@@ -17,6 +17,12 @@ I like using Neotest, but there are several features that I really miss:
 
 If these features resonate with you, Quicktest might be just what you need!
 
+## Features
+- **Contextual Test Triggering:** Run tests directly from where your cursor is located or execute all tests in the entire file.
+- **Flexible Test Reruns:** Rerun tests from any location, automatically opening a popup or using an existing split view if it's open.
+- **Live-Scrolling Results:** Continuously scroll through test results as they are generated.
+- **Test Duration Timer:** Display a timer to monitor the duration of ongoing tests.
+
 ## Supported languages
 
 Right now only `go` is supported! Feel free to open PR to add other integrations.
