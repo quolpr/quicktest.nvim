@@ -3,20 +3,6 @@
 ![Example](https://github.com/quolpr/quicktest.nvim/assets/7958527/b3629bc9-2886-468c-a6e2-6b826dc404d0)
 
 
-## Motivation
-I like using Neotest, but there are several features that I really miss:
-
-1. **Reset Test Results**: Ability to reset test results with each run.
-2. **Popup on Rerun**: Automatically force open a popup when running test, or keep it in split view if split is opened.
-3. **Performance Issues**: Stability and performance are not as good as desired. Neotest parses the entire codebase to find tests(correct me if I am wrong), which slows down Neovim.
-4. **Real-Time Feedback**: I would appreciate better feedback, such as displaying a timer to show how long the test is running.
-5. **Live Test Results**: I want to see test results as they happen, line by line, not just at the end.
-6. **Scrollable Output**: Enable output to automatically scroll while the test is running.
-7. **Adaptive Test Views**: Depending on the task, sometimes a popup is best, sometimes a split window. It would be great if the plugin could adapt to the context, potentially displaying results in both views simultaneously.
-8. **Flexible API**: An easy-to-use API for adding new integrations while maintaining flexibility is also needed.
-
-If these features resonate with you, Quicktest might be just what you need!
-
 ## Features
 - **Contextual Test Triggering:** Run tests directly from where your cursor is located or execute all tests in the entire file.
 - **Flexible Test Reruns:** Rerun tests from any location, automatically opening a popup or using an existing split view if it's open.
@@ -24,6 +10,20 @@ If these features resonate with you, Quicktest might be just what you need!
 - **Real-Time Feedback:** View the results of tests immediately as they run, without waiting for the completion of the test suite.
 - **Test Duration Timer:** Display a timer to monitor the duration of ongoing tests.
 - **Adaptive Display Options:** Instantly displays running test in a popup or uses a split view if already open, adapting to your current setup.
+
+If these features resonate with you, Quicktest might be just what you need!
+
+## Motivation
+I like using Neotest, but there are several features that I really miss:
+
+1. Ability to reset test results with each run.
+2. Automatically force open a popup when running test, or keep it in split view if split is opened.
+3. Stability and performance are not as good as desired. Neotest parses the entire codebase to find tests(correct me if I am wrong), which slows down Neovim.
+4. I would appreciate better feedback, such as displaying a timer to show how long the test is running.
+5. I want to see test results as they happen, line by line, not just at the end.
+6. Make output to automatically scroll while the test is running.
+7. Depending on the task, sometimes a popup is best, sometimes a split window. It would be great if the plugin could adapt to the context, potentially displaying results in both views simultaneously.
+8. An easy-to-use API for adding new integrations while maintaining flexibility is also needed.
 
 ## Supported languages
 
