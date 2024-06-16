@@ -7,8 +7,8 @@
 I like using Neotest, but there are several features that I really miss:
 
 1. **Reset Test Results**: Ability to reset test results with each run.
-2. **Popup on Rerun**: Automatically force open a popup for previously run tests.
-3. **Performance Issues**: Stability and performance are not as good as desired. Neotest parses the entire codebase to find tests, which is unnecessary and slows down Neovim.
+2. **Popup on Rerun**: Automatically force open a popup when running test, or keep it in split view if split is opened.
+3. **Performance Issues**: Stability and performance are not as good as desired. Neotest parses the entire codebase to find tests(correct me if I am wrong), which slows down Neovim.
 4. **Real-Time Feedback**: I would appreciate better feedback, such as displaying a timer to show how long the test is running.
 5. **Live Test Results**: I want to see test results as they happen, line by line, not just at the end.
 6. **Scrollable Output**: Enable output to automatically scroll while the test is running.
