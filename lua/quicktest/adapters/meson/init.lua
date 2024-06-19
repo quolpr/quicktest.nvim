@@ -130,7 +130,11 @@ M.is_enabled = function(bufnr)
 end
 
 M.title = function(params)
-  return "HERPA DERP TITLE"
+  if params.test then
+    return "Testing " .. params.test.test_suite .. "/" .. params.test.test_name
+  else
+    return "Running tests from " .. params.test_exe
+  end
 end
 
 return M
