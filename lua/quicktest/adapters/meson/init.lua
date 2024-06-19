@@ -1,7 +1,7 @@
 local Job = require("plenary.job")
 
 local M = {
-  name = "generic_test_runner",
+  name = "meson test runner for C assuming Criterion test frame work",
 }
 
 local function get_filename(path)
