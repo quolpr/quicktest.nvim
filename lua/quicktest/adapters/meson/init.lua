@@ -4,6 +4,10 @@ local M = {
   name = "generic_test_runner",
 }
 
+local function get_filename(path)
+  return path:match("[^/]*.c$")
+end
+
 --- Builds parameters for running tests based on buffer number and cursor position.
 --- This function should be customized to extract necessary information from the buffer.
 ---@param bufnr integer
@@ -77,8 +81,9 @@ end
 ---@param bufnr integer
 ---@return boolean
 M.is_enabled = function(bufnr)
-  -- Implement logic to determine if the plugin should be active for the given buffer
-  return true
+  local bufname = vim.api.nvim_buf_get_name(bufnr)
+  local filename = get_filename(bufname)
+  return vim.startswith(filename, "test_") and vim.endswith(filename, ".c")
 end
 
 M.title = function(params)
