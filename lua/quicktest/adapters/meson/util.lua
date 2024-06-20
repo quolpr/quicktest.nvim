@@ -128,14 +128,13 @@ function M.make_test_args(params)
     table.insert(test_args, params.test_exe)
   end
 
-  local ts = params.test.test_suite or "*"
-  local tn = params.test.test_name or "*"
-  table.insert(test_args, "--test-args=--filter=" .. ts .. "/" .. tn)
-
-  table.insert(test_args, "--test-args=--json")
   table.insert(test_args, "-v")
 
-  --print(vim.inspect(test_args))
+  local ts = params.test.test_suite or "*"
+  local tn = params.test.test_name or "*"
+
+  local ta = "--filter=" .. ts .. "/" .. tn .. " --json"
+  table.insert(test_args, "--test-args=" .. ta)
   return test_args
 end
 
