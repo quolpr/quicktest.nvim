@@ -21,7 +21,9 @@ Key features include identifying the nearest function and triggering its test,
 rerunning previous tests from any location, and live scrolling of results
 alongside a running timer for immediate feedback.
 
-Supported languages: Go(for now!).
+Supported languages: Go(for now!) Feel free to open PR for your language, the
+plugin API is pretty simple and described in `Building your own plugin` section
+in this Readme.
 
 
 INSTALLATION                         *my-template-docs-quicktest-installation*
