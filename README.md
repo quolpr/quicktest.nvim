@@ -3,45 +3,6 @@ Quicktest improves your testing experience in real-time with flexible display op
 
 ![Example](https://github.com/quolpr/quicktest.nvim/assets/7958527/b3629bc9-2886-468c-a6e2-6b826dc404d0)
 
-
-## Features
-- **Contextual Test Triggering:** Run tests directly from where your cursor is located or execute all tests in the entire file.
-- **Flexible Test Reruns:** Rerun tests from any location, automatically opening a popup or using an existing split view if it's open.
-- **Live-Scrolling Results:** Continuously scroll through test results as they are generated.
-- **Real-Time Feedback:** View the results of tests immediately as they run, without waiting for the completion of the test suite.
-- **Test Duration Timer:** Display a timer to monitor the duration of ongoing tests.
-- **Adaptive Display Options:** Instantly displays running test in a popup or uses a split view if already open, adapting to your current setup.
-
-If these features resonate with you, Quicktest might be just what you need!
-
-## Api 
-
-```lua
-local qt = require 'quicktest'
-
--- Find nearest test under cursor and run in popup
-qt.run_line('popup')
--- Find nearest test under cursor and run in split
-qt.run_line('split')
--- Find nearest test under cursor and run in currently opened window(popup or split)
-qt.run_line()
-
--- Open or close split/popup if already opened, without running tests.
--- Just open and close window.
-qt.toggle_win('popup')
-qt.toggle_win('split')
-
--- Run all tests of file in popup/split
-qt.run_file('popup')
-qt.run_file('split')
-qt.run_line()
-
--- Take previous test run and run in popup/split
-qt.run_previous('popup')
-qt.run_previous('split')
-qt.run_previous()
-```
-
 ## Installation
 
 Simple configurations:
@@ -133,6 +94,44 @@ Using Lazy:
     },
   },
 }
+```
+
+## Features
+- **Contextual Test Triggering:** Run tests directly from where your cursor is located or execute all tests in the entire file.
+- **Flexible Test Reruns:** Rerun tests from any location, automatically opening a popup or using an existing split view if it's open.
+- **Live-Scrolling Results:** Continuously scroll through test results as they are generated.
+- **Real-Time Feedback:** View the results of tests immediately as they run, without waiting for the completion of the test suite.
+- **Test Duration Timer:** Display a timer to monitor the duration of ongoing tests.
+- **Adaptive Display Options:** Instantly displays running test in a popup or uses a split view if already open, adapting to your current setup.
+
+If these features resonate with you, Quicktest might be just what you need!
+
+## Api 
+
+```lua
+local qt = require 'quicktest'
+
+-- Find nearest test under cursor and run in popup
+qt.run_line('popup')
+-- Find nearest test under cursor and run in split
+qt.run_line('split')
+-- Find nearest test under cursor and run in currently opened window(popup or split)
+qt.run_line()
+
+-- Open or close split/popup if already opened, without running tests.
+-- Just open and close window.
+qt.toggle_win('popup')
+qt.toggle_win('split')
+
+-- Run all tests of file in popup/split
+qt.run_file('popup')
+qt.run_file('split')
+qt.run_line()
+
+-- Take previous test run and run in popup/split
+qt.run_previous('popup')
+qt.run_previous('split')
+qt.run_previous()
 ```
 
 ## Motivation
