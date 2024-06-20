@@ -1,8 +1,71 @@
 local Job = require("plenary.job")
-
+local json5 = require("json5")
 local M = {
   name = "meson test runner for C assuming Criterion test frame work",
 }
+
+local parsed_test_output = {}
+
+local function capture_json(data, json)
+  local complete = false
+
+  if vim.startswith(data, "{") then
+    json.open = true
+    json.text = ""
+  end
+
+  if json.open then
+    json.text = json.text .. data .. "\n"
+  end
+
+  if vim.startswith(data, "}") then
+    json.open = false
+    complete = true
+  end
+
+  return complete
+end
+
+local function print_results(data, params, send)
+  local parsed = json5.parse(data)
+  -- print(vim.inspect(parsed))
+  for _, ts in ipairs(parsed["test_suites"]) do
+    -- print(vim.inspect(ts))
+    if params.test.test_suite == nil or params.test.test_suite == ts["name"] then
+      for _, test in ipairs(ts["tests"]) do
+        -- print(vim.inspect(test))
+        if params.test.test_name == nil or params.test.test_name == test["name"] then
+          send({ type = "stdout", output = test["name"] .. ": " .. test["status"] })
+          if test["messages"] then
+            for _, msg in ipairs(test["messages"]) do
+              send({ type = "stdout", output = "  " .. msg })
+            end
+          end
+        end
+      end
+    end
+  end
+end
+
+local function capture_xml(data, xml)
+  local returned_data = data
+
+  if vim.startswith(data, "<?xml") then
+    xml.open = true
+    xml.text = ""
+  end
+
+  if xml.open then
+    xml.text = xml.text .. data .. "\n"
+    returned_data = nil
+  end
+
+  if vim.startswith(data, "</testsuites>") then
+    xml.open = false
+  end
+
+  return returned_data
+end
 
 local function get_filename(path)
   return path:match("[^/]*.c$")
@@ -95,11 +158,48 @@ M.run = function(params, send)
     table.insert(test_args, "--test-args=--filter=" .. params.test.test_suite .. "/" .. params.test.test_name)
   end
 
+  table.insert(test_args, "--test-args=--json")
+  table.insert(test_args, "-v")
+
+  print(vim.inspect(test_args))
+  local build_ok = false
+  local build_out = {}
+  local build = Job:new({
+    command = "meson",
+    args = { "compile", "-C", "build" },
+    on_stdout = function(_, data)
+      table.insert(build_out, data)
+    end,
+    on_stderr = function(_, data)
+      send({ type = "stderr", output = data })
+    end,
+    on_exit = function(_, return_val)
+      build_ok = return_val == 0
+      if build_ok == false then
+        for _, value in ipairs(build_out) do
+          send({ type = "stdout", output = value })
+        end
+        send({ type = "exit", code = return_val })
+      end
+      print("Return code: " .. return_val)
+    end,
+  })
+  build:start()
+  Job.join(build)
+
+  print("Build ok? : " .. tostring(build_ok))
+  if build_ok == false then
+    return -1
+  end
+
   local job = Job:new({
     command = "meson",
     args = test_args, -- Modify based on how your test command needs to be structured
     on_stdout = function(_, data)
-      send({ type = "stdout", output = data })
+      data = capture_json(data, parsed_test_output)
+      if data then
+        print_results(parsed_test_output.text, params, send)
+      end
     end,
     on_stderr = function(_, data)
       send({ type = "stderr", output = data })
@@ -118,6 +218,15 @@ end
 ---@param results any
 M.after_run = function(params, results)
   -- Implement actions based on the results, such as updating UI or handling errors
+  -- print(vim.inspect(params.data))
+  if parsed_test_output.text == nil then
+    return
+  end
+  -- print(xml_output.text)
+  local parsed_data = json5.parse(parsed_test_output.text)
+  -- print(vim.inspect(parsed_data))
+  -- print(parsed_data["id"])
+  -- print(parsed_data["test_suites"][1]["name"])
 end
 
 --- Checks if the plugin is enabled for the given buffer.
