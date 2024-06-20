@@ -159,17 +159,34 @@ Here is the template of how plugin for any language could be written. For more e
 local Job = require("plenary.job")
 
 local M = {
-  name = "generic_test_runner"
+  name = "myadapter",
 }
+---@class MyRunParams
+---@field func_names string[]
+---@field bufnr integer
+---@field cursor_pos integer[]
 
 --- Builds parameters for running tests based on buffer number and cursor position.
 --- This function should be customized to extract necessary information from the buffer.
 ---@param bufnr integer
 ---@param cursor_pos integer[]
----@return any
-M.build_params = function(bufnr, cursor_pos)
+---@return MyRunParams
+M.build_line_run_params = function(bufnr, cursor_pos)
+  -- print("bufnr", bufnr)
   -- You can get current function name to run based on bufnr and cursor_pos
   -- Check hot it is done for golang at `lua/quicktest/adapters/golang`
+  return {
+    bufnr = bufnr,
+    cursor_pos = cursor_pos,
+    func_names = {},
+    -- Add other parameters as needed
+  }
+end
+
+---@param bufnr integer
+---@param cursor_pos integer[]
+---@return MyRunParams
+M.build_file_run_params = function(bufnr, cursor_pos)
   return {
     bufnr = bufnr,
     cursor_pos = cursor_pos,
@@ -178,34 +195,44 @@ M.build_params = function(bufnr, cursor_pos)
 end
 
 --- Determines if the test can be run with the given parameters.
----@param params any
----@return boolean
+---@param params MyRunParams
+---@return boolean, string
 M.can_run = function(params)
+  if not params.func_names or #params.func_names == 0 then
+    return false, "No tests to run"
+  end
+
   -- Implement logic to determine if the test can be run
-  return true
+  return true, ""
 end
 
 --- Executes the test with the given parameters.
----@param params any
+---@param params MyRunParams
 ---@param send fun(data: any)
 ---@return integer
 M.run = function(params, send)
   local job = Job:new({
     command = "test_command",
-    args = {"--some-flag"}, -- Modify based on how your test command needs to be structured
+    args = { "--some-flag" }, -- Modify based on how your test command needs to be structured
     on_stdout = function(_, data)
-      send({type = "stdout", output = data})
+      send({ type = "stdout", output = data })
     end,
     on_stderr = function(_, data)
-      send({type = "stderr", output = data})
+      send({ type = "stderr", output = data })
     end,
     on_exit = function(_, return_val)
-      send({type = "exit", code = return_val})
+      send({ type = "exit", code = return_val })
     end,
   })
 
   job:start()
-  return job.pid -- Return the process ID
+
+  return job.pid
+end
+
+---@param params MyRunParams
+M.title = function(params)
+  return "Running test: " .. vim.inspect(params)
 end
 
 --- Handles actions to take after the test run, based on the results.
@@ -219,8 +246,8 @@ end
 ---@param bufnr integer
 ---@return boolean
 M.is_enabled = function(bufnr)
-  -- Implement logic to determine if the plugin should be active for the given buffer
-  return true
+  local bufname = vim.api.nvim_buf_get_name(bufnr)
+  return vim.endswith(bufname, "test.ts") or vim.endswith(bufname, "test.js")
 end
 
 return M

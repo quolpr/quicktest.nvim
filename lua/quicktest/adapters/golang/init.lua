@@ -66,12 +66,9 @@ end
 ---@param cursor_pos integer[]
 ---@return GoRunParams
 M.build_file_run_params = function(bufnr, cursor_pos)
-  print("funcs-bufnre", bufnr)
   local func_names = ts.get_func_names(bufnr)
   local cwd = find_go_mod_parent(bufnr) or vim.fn.getcwd()
   local module = get_module_path(cwd, bufnr) or "."
-
-  print("funcs", vim.inspect(func_names), bufnr)
 
   return {
     func_names = func_names,
