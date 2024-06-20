@@ -13,6 +13,127 @@
 
 If these features resonate with you, Quicktest might be just what you need!
 
+## Api 
+
+```lua
+local qt = require 'quicktest'
+
+-- Find nearest test under cursor and run in popup
+qt.run_line('popup')
+-- Find nearest test under cursor and run in split
+qt.run_line('split')
+-- Find nearest test under cursor and run in currently opened window(popup or split)
+qt.run_line()
+
+-- Open or close split/popup if already opened, without running tests.
+-- Just open and close window.
+qt.toggle_win('popup')
+qt.toggle_win('split')
+
+-- Run all tests of file in popup/split
+qt.run_file('popup')
+qt.run_file('split')
+qt.run_line()
+
+-- Take previous test run and run in popup/split
+qt.run_previous('popup')
+qt.run_previous('split')
+qt.run_previous()
+```
+
+## Installation
+
+Simple configurations:
+
+```lua
+local qt = require("quicktest")
+qt.setup()
+
+vim.keymap.set("n", "<leader>tr", qt.run_line, {
+  desc = "[T]est [R]un",
+})
+vim.keymap.set("n", "<leader>tR", qt.run_file, {
+  desc = "[T]est [R]un file",
+})
+vim.keymap.set("n", "<leader>tR", qt.run_previous, {
+  desc = "[T]est Run [P]revious",
+})
+vim.keymap.set("n", "<leader>tt", function()
+  qt.toggle_win("popup")
+end, {
+  desc = "[T]est [T]oggle popup window",
+})
+vim.keymap.set("n", "<leader>tt", function()
+  qt.toggle_win("split")
+end, {
+  desc = "[T]est Toggle [S]plit window",
+})
+```
+
+Using Lazy:
+
+```lua
+{
+  "quolpr/quicktest.nvim",
+  opts = {},
+  dependencies = {
+    "nvim-lua/plenary.nvim",
+    "MunifTanjim/nui.nvim",
+    "m00qek/baleia.nvim",
+  },
+  keys = {
+    {
+      "<leader>tr",
+      function()
+        local qt = require("quicktest")
+        -- current_win_mode return currently opened panel, split or popup
+        qt.run_line()
+        -- You can force open split or popup like this:
+        -- qt().run_current('split')
+        -- qt().run_current('popup')
+      end,
+      desc = "[T]est [R]un",
+    },
+    {
+      "<leader>tR",
+      function()
+        local qt = require("quicktest")
+
+        qt.run_file()
+      end,
+      desc = "[T]est [R]un file",
+    },
+    {
+      "<leader>tp",
+      function()
+        local qt = require("quicktest")
+
+        qt.run_previous()
+      end,
+      desc = "[T]est Run [P]revious",
+    },
+    {
+      "<leader>tt",
+      function()
+        local qt = require("quicktest")
+
+        qt.toggle_win("popup")
+      end,
+      desc = "[T]est [T]oggle popup window",
+    },
+    {
+      "<leader>ts",
+      function()
+        local qt = require("quicktest")
+
+        qt.toggle_win("split")
+      end,
+      desc = "[T]est Toggle [S]plit window",
+    },
+  },
+}
+```
+
 ## Motivation
 I like using Neotest, but there are several features that I really miss:
 
@@ -29,71 +150,6 @@ I like using Neotest, but there are several features that I really miss:
 
 Right now only `go` is supported! Feel free to open PR to add other integrations.
 
-## Installation
-
-Using Lazy:
-
-```lua
-{
-  'quolpr/quicktest.nvim'
-  opts = {},
-  dependencies = {
-    'nvim-lua/plenary.nvim',
-    'MunifTanjim/nui.nvim',
-    'm00qek/baleia.nvim',
-  },
-  keys = function()
-    local qt = function()
-      return require 'quicktest'
-    end
-
-    local keys = {
-      {
-        '<leader>tr',
-        function()
-          -- current_win_mode return currently opened panel, split or popup
-          qt().run_line(qt().current_win_mode())
-          -- You can force open split or popup like this:
-          -- qt().run_current('split')
-          -- qt().run_current('popup')
-        end,
-        desc = '[T]est [R]un',
-      },
-      {
-        '<leader>tR',
-        function()
-          qt().run_file(qt().current_win_mode())
-        end,
-        desc = '[T]est [R]un file',
-      },
-      {
-        '<leader>tt',
-        function()
-          qt().toggle_win 'popup'
-        end,
-        desc = '[T]est [T]toggle result',
-      },
-      {
-        '<leader>ts',
-        function()
-          qt().toggle_win 'split'
-        end,
-        desc = '[T]est [S]plit result',
-      },
-
-      {
-        '<leader>tp',
-        function()
-          qt().run_previous(qt().current_win_mode())
-        end,
-        desc = '[T]est [P]revious',
-      },
-    }
-
-    return keys
-  end,
-}
-```
 
 ## Building your own plugin
 

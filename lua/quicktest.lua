@@ -61,4 +61,65 @@ end
 -- M.run(api.nvim_get_current_buf(), { "TestSum" }, nil, "/Users/quolpr/.config/nvim/go_test", "./abc")
 -- require("plenary.reload").reload_module("quicktest", false)
 
+local t = {
+  "quolpr/quicktest.nvim",
+  opts = {},
+  dependencies = {
+    "nvim-lua/plenary.nvim",
+    "MunifTanjim/nui.nvim",
+    "m00qek/baleia.nvim",
+  },
+  keys = {
+    {
+      "<leader>tr",
+      function()
+        local qt = require("quicktest")
+        -- current_win_mode return currently opened panel, split or popup
+        qt.run_line(qt.current_win_mode())
+        -- You can force open split or popup like this:
+        -- qt().run_current('split')
+        -- qt().run_current('popup')
+      end,
+      desc = "[T]est [R]un",
+    },
+    {
+      "<leader>tR",
+      function()
+        local qt = require("quicktest")
+
+        qt.run_file(qt.current_win_mode())
+      end,
+      desc = "[T]est [R]un file",
+    },
+    {
+      "<leader>tt",
+      function()
+        local qt = require("quicktest")
+
+        qt.toggle_win("popup")
+      end,
+      desc = "[T]est [T]toggle result",
+    },
+    {
+      "<leader>ts",
+      function()
+        local qt = require("quicktest")
+
+        qt.toggle_win("split")
+      end,
+      desc = "[T]est [S]plit result",
+    },
+
+    {
+      "<leader>tp",
+      function()
+        local qt = require("quicktest")
+
+        qt.run_previous(qt.current_win_mode())
+      end,
+      desc = "[T]est [P]revious",
+    },
+  },
+}
+
 return M

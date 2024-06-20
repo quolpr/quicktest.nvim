@@ -190,7 +190,7 @@ end
 --- @param config QuicktestConfig
 --- @param mode WinMode?
 function M.run_line(config, mode)
-  mode = mode or "popup"
+  mode = mode or M.current_win_mode()
   local current_buffer = api.nvim_get_current_buf()
   local win = vim.api.nvim_get_current_win() -- Get the current active window
   local cursor_pos = vim.api.nvim_win_get_cursor(win) -- Get the cursor position in the window
@@ -216,7 +216,7 @@ end
 --- @param config QuicktestConfig
 --- @param mode WinMode?
 function M.run_file(config, mode)
-  mode = mode or "popup"
+  mode = mode or M.current_win_mode()
   local current_buffer = api.nvim_get_current_buf()
   local win = vim.api.nvim_get_current_win() -- Get the current active window
   local cursor_pos = vim.api.nvim_win_get_cursor(win) -- Get the cursor position in the window
@@ -241,7 +241,7 @@ end
 
 --- @param mode WinMode?
 function M.run_previous(mode)
-  mode = mode or "popup"
+  mode = mode or M.current_win_mode()
 
   M.try_open_win(mode)
 
