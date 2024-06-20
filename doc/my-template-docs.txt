@@ -21,6 +21,8 @@ Key features include identifying the nearest function and triggering its test,
 rerunning previous tests from any location, and live scrolling of results
 alongside a running timer for immediate feedback.
 
+Supported languages: Go(for now!).
+
 
 INSTALLATION                         *my-template-docs-quicktest-installation*
 
