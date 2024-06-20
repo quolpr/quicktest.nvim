@@ -28,16 +28,14 @@ function M.print_results(data, params, send)
   -- print(vim.inspect(parsed))
   for _, ts in ipairs(parsed["test_suites"]) do
     -- print(vim.inspect(ts))
-    if params.test.test_suite == nil or params.test.test_suite == ts["name"] then
-      send({ type = "stdout", output = ts["name"] })
-      for _, test in ipairs(ts["tests"]) do
-        -- print(vim.inspect(test))
-        if params.test.test_name == nil or params.test.test_name == test["name"] then
-          send({ type = "stdout", output = "  " .. test["name"] .. ": " .. test["status"] })
-          if test["messages"] then
-            for _, msg in ipairs(test["messages"]) do
-              send({ type = "stdout", output = "    " .. msg })
-            end
+    send({ type = "stdout", output = ts["name"] })
+    for _, test in ipairs(ts["tests"]) do
+      -- print(vim.inspect(test))
+      if test["status"] ~= "SKIPPED" then
+        send({ type = "stdout", output = "  " .. test["name"] .. ": " .. test["status"] })
+        if test["messages"] then
+          for _, msg in ipairs(test["messages"]) do
+            send({ type = "stdout", output = "    " .. msg })
           end
         end
       end
