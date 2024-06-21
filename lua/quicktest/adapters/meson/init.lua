@@ -24,6 +24,11 @@ local parsed_test_output = {}
 ---@return MesonTestParams
 M.build_file_run_params = function(bufnr, cursor_pos)
   local test_exe = util.get_test_exe_from_buffer(bufnr)
+
+  if test_exe == nil then
+    return {}
+  end
+
   return {
     test = {},
     test_exe = test_exe,
@@ -38,6 +43,11 @@ end
 M.build_line_run_params = function(bufnr, cursor_pos)
   local test_exe = util.get_test_exe_from_buffer(bufnr)
   local line = test_parser.get_nearest_test(bufnr, cursor_pos)
+
+  if line == nil or test_exe == nil then
+    return {}
+  end
+
   local test = test_parser.get_test_suite_and_name(line)
   return {
     test = test,
@@ -48,11 +58,11 @@ M.build_line_run_params = function(bufnr, cursor_pos)
 end
 
 --- Determines if the test can be run with the given parameters.
+--- Attempt to run if params is not an empty table
 ---@param params MesonTestParams
 ---@return boolean
 M.can_run = function(params)
-  -- Implement logic to determine if the test can be run
-  return true
+  return next(params) ~= nil
 end
 
 --- Executes the test with the given parameters.
