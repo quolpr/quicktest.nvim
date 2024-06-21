@@ -1,6 +1,7 @@
 local Job = require("plenary.job")
 local util = require("quicktest.adapters.meson.util")
 local meson = require("quicktest.adapters.meson.meson")
+local test_parser = require("quicktest.adapters.meson.test_parser")
 
 local M = {
   name = "meson test runner for C assuming Criterion test frame work",
@@ -20,8 +21,8 @@ end
 
 M.build_line_run_params = function(bufnr, cursor_pos)
   local test_exe = util.get_test_exe_from_buffer(bufnr)
-  local line = util.get_nearest_test(bufnr, cursor_pos)
-  local test = util.get_test_suite_and_name(line)
+  local line = test_parser.get_nearest_test(bufnr, cursor_pos)
+  local test = test_parser.get_test_suite_and_name(line)
   return {
     test = test,
     test_exe = test_exe,
