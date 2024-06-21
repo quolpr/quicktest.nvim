@@ -3,6 +3,10 @@ local json5 = require("json5")
 
 local M = {}
 
+--- Obtain build definitions for all targets.
+--- Calls 'meson introspect --targets build' under the hood from the current directory.
+--- This function returns a table with parsed JSON data
+---@return table
 function M.get_targets()
   local output = ""
   local job = Job:new({
@@ -26,6 +30,13 @@ function M.get_targets()
   return json5.parse(output)
 end
 
+---@class CompileResult
+---@field return_val integer
+---@field text string[]
+
+--- Compile the project
+--- Calls 'meson -C compile build' under the hood from the current directory
+--- @return CompileResult
 function M.compile()
   local build_out = {}
   local retval = -1

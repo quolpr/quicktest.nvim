@@ -9,6 +9,19 @@ local M = {
 
 local parsed_test_output = {}
 
+---@class Test
+---@field test_suite string
+---@field test_name string
+
+---@class MesonTestParams
+---@field test Test
+---@field test_exe string
+---@field bufnr integer
+---@field cursor_pos integer[]
+
+---@param bufnr integer
+---@param cursor_pos integer[]
+---@return MesonTestParams
 M.build_file_run_params = function(bufnr, cursor_pos)
   local test_exe = util.get_test_exe_from_buffer(bufnr)
   return {
@@ -19,6 +32,9 @@ M.build_file_run_params = function(bufnr, cursor_pos)
   }
 end
 
+---@param bufnr integer
+---@param cursor_pos integer[]
+---@return MesonTestParams
 M.build_line_run_params = function(bufnr, cursor_pos)
   local test_exe = util.get_test_exe_from_buffer(bufnr)
   local line = test_parser.get_nearest_test(bufnr, cursor_pos)
@@ -30,8 +46,9 @@ M.build_line_run_params = function(bufnr, cursor_pos)
     cursor_pos = cursor_pos,
   }
 end
+
 --- Determines if the test can be run with the given parameters.
----@param params any
+---@param params MesonTestParams
 ---@return boolean
 M.can_run = function(params)
   -- Implement logic to determine if the test can be run
@@ -39,13 +56,14 @@ M.can_run = function(params)
 end
 
 --- Executes the test with the given parameters.
----@param params any
+---@param params MesonTestParams
 ---@param send fun(data: any)
 ---@return integer
 M.run = function(params, send)
-  -- Not needed for running tests, but if we explicitly call meson compile here
-  -- then we can capture the build outut and show potential build errors in the UI.
-  -- Otherwise the test will fail silently-ish with little insight to the user.
+  -- It is not necessary to compile before running the tests as meson does this automatically.
+  -- However, we explicitly call meson compile here to capture the build output so that
+  -- we can show potential build errors in the UI.
+  -- Otherwise the test will fail silently-ish providing little insight to the user.
   local compile = meson.compile()
   if compile.return_val ~= 0 then
     for _, line in ipairs(compile.text) do
@@ -55,13 +73,14 @@ M.run = function(params, send)
     return -1
   end
 
+  --- Run the tests
   local job = Job:new({
     command = "meson",
-    args = util.make_test_args(params),
+    args = util.make_test_args(params.test_exe, params.test.test_suite, params.test.test_name),
     on_stdout = function(_, data)
       data = util.capture_json(data, parsed_test_output)
       if data then
-        util.print_results(parsed_test_output.text, params, send)
+        util.print_results(parsed_test_output.text, send)
       end
     end,
     on_stderr = function(_, data)
@@ -77,7 +96,7 @@ M.run = function(params, send)
 end
 
 --- Handles actions to take after the test run, based on the results.
----@param params any
+---@param params MesonTestParams
 ---@param results any
 M.after_run = function(params, results)
   -- Implement actions based on the results, such as updating UI or handling errors
@@ -100,6 +119,8 @@ M.is_enabled = function(bufnr)
   return vim.startswith(filename, "test_") and vim.endswith(filename, ".c")
 end
 
+---@param params MesonTestParams
+---@return string
 M.title = function(params)
   if params.test.test_suite ~= nil and params.test.test_name ~= nil then
     return "Testing " .. params.test.test_suite .. "/" .. params.test.test_name
