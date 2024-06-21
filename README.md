@@ -189,7 +189,6 @@ local M = {
 ---@param cursor_pos integer[]
 ---@return MyRunParams, nil | string
 M.build_line_run_params = function(bufnr, cursor_pos)
-  -- print("bufnr", bufnr)
   -- You can get current function name to run based on bufnr and cursor_pos
   -- Check hot it is done for golang at `lua/quicktest/adapters/golang`
   return {
@@ -235,11 +234,11 @@ M.run = function(params, send)
   return job.pid
 end
 
---- Optional title of the test run
+---Optional title of the test run
 ---@param params MyRunParams
-M.title = function(params)
-  return "Running test"
-end
+-- M.title = function(params)
+--   return "Running test"
+-- end
 
 --- Handles actions to take after the test run, based on the results.
 ---@param params any

@@ -212,11 +212,24 @@ end
 ---@param bufnr integer
 ---@return boolean
 M.is_enabled = function(bufnr)
-  local bufname = vim.api.nvim_buf_get_name(bufnr)
-  return vim.endswith(bufname, "test.ts")
-    or vim.endswith(bufname, "test.js")
-    or vim.endswith(bufname, "spec.ts")
-    or vim.endswith(bufname, "spec.js")
+  local file_path = vim.api.nvim_buf_get_name(bufnr)
+
+  local is_test_file = false
+
+  if string.match(file_path, "__tests__") then
+    is_test_file = true
+  end
+
+  for _, x in ipairs({ "spec", "test" }) do
+    for _, ext in ipairs({ "js", "jsx", "coffee", "ts", "tsx" }) do
+      if string.match(file_path, "%." .. x .. "%." .. ext .. "$") then
+        is_test_file = true
+        goto matched_pattern
+      end
+    end
+  end
+  ::matched_pattern::
+  return is_test_file
 end
 
 return M

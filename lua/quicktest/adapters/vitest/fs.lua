@@ -113,14 +113,14 @@ function M.find_cwd(bufnr, by)
   local path = vim.fn.fnamemodify(buffer_name, ":p:h") -- Get the full path of the directory containing the file
 
   while path and #path > 1 do
-    local go_mod_path = path .. M.path_sep .. by
-    if vim.fn.filereadable(go_mod_path) == 1 then
+    local file_path = path .. M.path_sep .. by
+    if vim.fn.filereadable(file_path) == 1 then
       return path
     end
     path = vim.fn.fnamemodify(path, ":h") -- Move up one directory level
   end
 
-  return nil -- Return nil if 'go.mod' is not found in any parent directory
+  return nil -- Return nil if by is not found in any parent directory
 end
 
 return M
