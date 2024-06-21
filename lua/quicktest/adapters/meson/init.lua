@@ -5,9 +5,8 @@ local test_parser = require("quicktest.adapters.meson.test_parser")
 
 local M = {
   name = "meson test runner for C assuming Criterion test frame work",
+  test_results = {},
 }
-
-local parsed_test_output = {}
 
 ---@class Test
 ---@field test_suite string
@@ -83,14 +82,17 @@ M.run = function(params, send)
     return -1
   end
 
+  local raw_json = {}
+
   --- Run the tests
   local job = Job:new({
     command = "meson",
     args = util.make_test_args(params.test_exe, params.test.test_suite, params.test.test_name),
     on_stdout = function(_, data)
-      data = util.capture_json(data, parsed_test_output)
-      if data then
-        util.print_results(parsed_test_output.text, send)
+      local temp = util.capture_json(data, raw_json)
+      if temp then
+        M.test_results = temp
+        util.print_results(M.test_results, send)
       end
     end,
     on_stderr = function(_, data)

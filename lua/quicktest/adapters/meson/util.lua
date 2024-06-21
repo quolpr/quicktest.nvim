@@ -29,9 +29,9 @@ end
 ---Return true if JSON was successfully captured.
 ---@param data string
 ---@param json JsonContext
----@return boolean
+---@return table | nil
 function M.capture_json(data, json)
-  local complete = false
+  local result = nil
 
   if vim.startswith(data, "{") then
     json.open = true
@@ -44,19 +44,18 @@ function M.capture_json(data, json)
 
   if vim.startswith(data, "}") then
     json.open = false
-    complete = true
+    result = json5.parse(json.text)
   end
 
-  return complete
+  return result
 end
 
 ---Prints the test results using the callback provided by the plugin
----@param data string JSON document
+---@param result_json table
 ---@param send fun(data: any)
-function M.print_results(data, send)
-  local parsed = json5.parse(data)
-  -- print(vim.inspect(parsed))
-  for _, ts in ipairs(parsed["test_suites"]) do
+function M.print_results(result_json, send)
+  -- print(vim.inspect(result_json))
+  for _, ts in ipairs(result_json["test_suites"]) do
     -- print(vim.inspect(ts))
     send({ type = "stdout", output = ts["name"] })
     for _, test in ipairs(ts["tests"]) do
