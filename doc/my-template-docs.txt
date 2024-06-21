@@ -4,9 +4,9 @@
 Table of Contents                         *my-template-docs-table-of-contents*
 
 1. Quicktest                                      |my-template-docs-quicktest|
+  - Api                                       |my-template-docs-quicktest-api|
   - Installation                     |my-template-docs-quicktest-installation|
   - Features                             |my-template-docs-quicktest-features|
-  - Api                                       |my-template-docs-quicktest-api|
   - Motivation                         |my-template-docs-quicktest-motivation|
   - Supported languages       |my-template-docs-quicktest-supported-languages|
   - Building your own adapter|my-template-docs-quicktest-building-your-own-adapter|
@@ -20,6 +20,43 @@ options like popups or split windows, customized to your workflow preferences.
 Key features include identifying the nearest function and triggering its test,
 rerunning previous tests from any location, and live scrolling of results
 alongside a running timer for immediate feedback.
+
+
+API                                           *my-template-docs-quicktest-api*
+
+>lua
+    local qt = require 'quicktest'
+    
+    -- Choose your adapter, here all supported adapters are listed
+    qt.setup({
+      adapters = {
+        require("quicktest.adapters.golang"),
+        require("quicktest.adapters.vitest"),
+      }
+    })
+    
+    -- Find nearest test under cursor and run in popup
+    qt.run_line('popup')
+    -- Find nearest test under cursor and run in split
+    qt.run_line('split')
+    -- Find nearest test under cursor and run in currently opened window(popup or split)
+    qt.run_line()
+    
+    -- Open or close split/popup if already opened, without running tests.
+    -- Just open and close window.
+    qt.toggle_win('popup')
+    qt.toggle_win('split')
+    
+    -- Run all tests of file in popup/split
+    qt.run_file('popup')
+    qt.run_file('split')
+    qt.run_line()
+    
+    -- Take previous test run and run in popup/split
+    qt.run_previous('popup')
+    qt.run_previous('split')
+    qt.run_previous()
+<
 
 
 INSTALLATION                         *my-template-docs-quicktest-installation*
@@ -147,35 +184,6 @@ FEATURES                                 *my-template-docs-quicktest-features*
 - **Adaptive Display Options:** Instantly displays running test in a popup or uses a split view if already open, adapting to your current setup.
 
 If these features resonate with you, Quicktest might be just what you need!
-
-
-API                                           *my-template-docs-quicktest-api*
-
->lua
-    local qt = require 'quicktest'
-    
-    -- Find nearest test under cursor and run in popup
-    qt.run_line('popup')
-    -- Find nearest test under cursor and run in split
-    qt.run_line('split')
-    -- Find nearest test under cursor and run in currently opened window(popup or split)
-    qt.run_line()
-    
-    -- Open or close split/popup if already opened, without running tests.
-    -- Just open and close window.
-    qt.toggle_win('popup')
-    qt.toggle_win('split')
-    
-    -- Run all tests of file in popup/split
-    qt.run_file('popup')
-    qt.run_file('split')
-    qt.run_line()
-    
-    -- Take previous test run and run in popup/split
-    qt.run_previous('popup')
-    qt.run_previous('split')
-    qt.run_previous()
-<
 
 
 MOTIVATION                             *my-template-docs-quicktest-motivation*
