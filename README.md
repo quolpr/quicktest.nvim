@@ -5,6 +5,10 @@ Quicktest improves your testing experience in real-time with flexible display op
 
 ## Installation
 
+
+Supported languages: Go(for now!)<br>
+Feel free to open PR for your language, the plugin API is pretty simple and described in `Building your own plugin` section in this Readme.
+
 Simple configurations:
 
 ```lua
