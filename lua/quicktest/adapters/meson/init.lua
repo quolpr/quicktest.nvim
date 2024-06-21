@@ -3,6 +3,8 @@ local util = require("quicktest.adapters.meson.util")
 local meson = require("quicktest.adapters.meson.meson")
 local test_parser = require("quicktest.adapters.meson.test_parser")
 
+local ns = vim.api.nvim_create_namespace("quicktest-meson")
+
 local M = {
   name = "meson test runner for C assuming Criterion test frame work",
   test_results = {},
@@ -111,15 +113,30 @@ end
 ---@param params MesonTestParams
 ---@param results any
 M.after_run = function(params, results)
-  -- Implement actions based on the results, such as updating UI or handling errors
-  -- print(vim.inspect(params.data))
-  if parsed_test_output.text == nil then
-    return
+  local diagnostics = {}
+
+  for _, ts in ipairs(M.test_results["test_suites"]) do
+    for _, test in ipairs(ts["tests"]) do
+      if test["status"] == "FAILED" and test["messages"] then
+        for _, msg in ipairs(test["messages"]) do
+          local line_no = util.locate_error(msg)
+
+          if line_no then
+            table.insert(diagnostics, {
+              lnum = line_no - 1, -- lnum seems to be 0-based
+              col = 0,
+              severity = vim.diagnostic.severity.ERROR,
+              message = "FAILED",
+              source = "Test",
+              user_data = "test",
+            })
+          end
+        end
+      end
+    end
   end
-  -- print(xml_output.text)
-  -- print(vim.inspect(parsed_data))
-  -- print(parsed_data["id"])
-  -- print(parsed_data["test_suites"][1]["name"])
+
+  vim.diagnostic.set(ns, params.bufnr, diagnostics, {})
 end
 
 --- Checks if the plugin is enabled for the given buffer.
