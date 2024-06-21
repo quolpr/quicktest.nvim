@@ -1,5 +1,6 @@
 local Job = require("plenary.job")
 local json5 = require("json5")
+local meson = require("quicktest.adapters.meson.meson")
 
 local M = {}
 
@@ -58,13 +59,24 @@ local function mysplit(inputstr, sep)
   return t
 end
 
--- Assumes the test executable is named the same as the test except for the file ending
--- e.g. test_name.c -> test_name
+-- Uses meson introspect CLI to find the name of the test
+-- executable from the path of the open file
 function M.get_test_exe_from_buffer(bufnr)
   local bufname = vim.api.nvim_buf_get_name(bufnr)
-  local filename = M.get_filename(bufname)
-  filename = string.gsub(filename, ".c", "", 1)
-  return filename
+  local targets = meson.get_targets()
+  for _, target in ipairs(targets) do
+    -- print(vim.inspect(target["target_sources"]))
+    for _, target_source in ipairs(target["target_sources"]) do
+      -- print(vim.inspect(source))
+      for _, source in ipairs(target_source["sources"]) do
+        -- print(vim.inspect(source))
+        if source == bufname then
+          return target["name"]
+        end
+      end
+    end
+  end
+  return nil
 end
 
 function M.get_test_suite_and_name(line)
