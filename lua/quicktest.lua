@@ -2,7 +2,9 @@
 local module = require("quicktest.module")
 
 local config = {
-  plugins = { require("quicktest.adapters.golang") },
+  adapters = {
+    require("quicktest.adapters.golang"),
+  },
 }
 
 ---@class MyModule
@@ -22,12 +24,12 @@ end
 
 --- @param mode WinMode
 M.open_win = function(mode)
-  return module.try_open(mode)
+  return module.try_open_win(mode)
 end
 
---- @param mode WinMode?
+--- @param mode WinMode
 M.close_win = function(mode)
-  return module.try_close(mode)
+  return module.try_close_win(mode)
 end
 
 --- @param mode WinMode?
@@ -50,7 +52,6 @@ M.run_line = function(mode)
   return module.run_line(M.config, mode)
 end
 
--- M.open("split")
 -- module.run(require("quicktest.adapters.golang"), {
 --   func_names = { "TestSum" },
 --   sub_func_names = {},

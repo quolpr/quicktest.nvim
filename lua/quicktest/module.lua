@@ -11,7 +11,7 @@ local M = {}
 
 ---@alias CmdData {type: 'stdout', raw: string, output: string?, decoded: any} | {type: 'stderr', raw: string, output: string?, decoded: any} | {type: 'exit', code: number}
 
----@class QuicktestPlugin
+---@class QuicktestAdapter
 ---@field name string
 ---@field build_line_run_params fun(bufnr: integer, cursor_pos: integer[]): any
 ---@field build_file_run_params fun(bufnr: integer, cursor_pos: integer[]): any
@@ -22,32 +22,32 @@ local M = {}
 ---@field is_enabled fun(bufnr): boolean
 
 ---@class QuicktestConfig
----@field plugins QuicktestPlugin[]
+---@field adapters QuicktestAdapter[]
 
 --- @type {id: number, pid: number?} | nil
 local current_job = nil
 local previous_run = nil
 
 --- @param config QuicktestConfig
-local function getPlugin(config)
+local function get_adapter(config)
   local current_buffer = api.nvim_get_current_buf()
 
-  --- @type QuicktestPlugin
-  local plugin
+  --- @type QuicktestAdapter
+  local adapter
 
-  for _, plug in ipairs(config.plugins) do
+  for _, plug in ipairs(config.adapters) do
     if plug.is_enabled(current_buffer) then
-      plugin = plug
+      adapter = plug
       break
     end
   end
 
-  return plugin
+  return adapter
 end
 
---- @param plugin QuicktestPlugin
+--- @param adapter QuicktestAdapter
 --- @param params any
-function M.run(plugin, params)
+function M.run(adapter, params)
   if current_job then
     if current_job.pid then
       vim.system({ "kill", tostring(current_job.pid) }):wait()
@@ -60,7 +60,7 @@ function M.run(plugin, params)
   --- @type {id: number, pid: number?, exit_code: number?}
   local job = { id = math.random(10000000000000000) }
   current_job = job
-  previous_run = { plugin = plugin, params = params }
+  previous_run = { adapter = adapter, params = params }
   local current_time = vim.uv.now()
 
   local is_running = function()
@@ -102,21 +102,30 @@ function M.run(plugin, params)
   ---@diagnostic disable-next-line: missing-parameter
   a.run(function()
     local sender, receiver = a.control.channel.mpsc()
-    local pid = plugin.run(params, function(data)
+    local pid = adapter.run(params, function(data)
       sender.send(data)
     end)
     job.pid = pid
 
-    local title = plugin.title(params)
-    for _, buf in ipairs(ui.buffers) do
-      vim.api.nvim_buf_set_lines(buf, 0, -1, false, {
-        title,
-        "",
-        "",
-        "",
-      })
+    if adapter.title then
+      local title = adapter.title(params)
+      for _, buf in ipairs(ui.buffers) do
+        vim.api.nvim_buf_set_lines(buf, 0, -1, false, {
+          title,
+          "",
+          "",
+          "",
+        })
 
-      ui.scroll_down(buf)
+        ui.scroll_down(buf)
+      end
+    else
+      for _, buf in ipairs(ui.buffers) do
+        vim.api.nvim_buf_set_lines(buf, 0, -1, false, {
+          "",
+          "",
+        })
+      end
     end
 
     ---@diagnostic disable-next-line: missing-parameter
@@ -145,7 +154,7 @@ function M.run(plugin, params)
 
           print_status()
           current_job = nil
-          plugin.after_run(params, results)
+          adapter.after_run(params, results)
         end
 
         if result.type == "stdout" then
@@ -195,22 +204,22 @@ function M.run_line(config, mode)
   local win = vim.api.nvim_get_current_win() -- Get the current active window
   local cursor_pos = vim.api.nvim_win_get_cursor(win) -- Get the cursor position in the window
 
-  --- @type QuicktestPlugin
-  local plugin = getPlugin(config)
+  --- @type QuicktestAdapter
+  local adapter = get_adapter(config)
 
-  if not plugin then
-    return notify.warn("Can't test this file - no plugin found")
+  if not adapter then
+    return notify.warn("Can't test this file - no adapter found")
   end
 
   M.try_open_win(mode)
 
-  local params = plugin.build_line_run_params(current_buffer, cursor_pos)
+  local params, error = adapter.build_line_run_params(current_buffer, cursor_pos)
 
-  if not plugin.can_run(params) then
-    return notify.warn("No tests to run")
+  if error ~= nil and error ~= "" then
+    return notify.warn("Failed to run test: " .. error)
   end
 
-  M.run(plugin, params)
+  M.run(adapter, params)
 end
 
 --- @param config QuicktestConfig
@@ -221,22 +230,22 @@ function M.run_file(config, mode)
   local win = vim.api.nvim_get_current_win() -- Get the current active window
   local cursor_pos = vim.api.nvim_win_get_cursor(win) -- Get the cursor position in the window
 
-  --- @type QuicktestPlugin
-  local plugin = getPlugin(config)
+  --- @type QuicktestAdapter
+  local adapter = get_adapter(config)
 
-  if not plugin then
-    return notify.warn("No plugin found")
+  if not adapter then
+    return notify.warn("No adapter found")
   end
 
   M.try_open_win(mode)
 
-  local params = plugin.build_file_run_params(current_buffer, cursor_pos)
+  local params, error = adapter.build_file_run_params(current_buffer, cursor_pos)
 
-  if not plugin.can_run(params) then
-    return notify.warn("No tests to run")
+  if error ~= nil and error ~= "" then
+    return notify.warn("Failed to run test: " .. error)
   end
 
-  M.run(plugin, params)
+  M.run(adapter, params)
 end
 
 --- @param mode WinMode?
@@ -249,7 +258,7 @@ function M.run_previous(mode)
     return notify.warn("No previous run")
   end
 
-  M.run(previous_run.plugin, previous_run.params)
+  M.run(previous_run.adapter, previous_run.params)
 end
 
 function M.current_win_mode()

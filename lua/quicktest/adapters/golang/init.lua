@@ -64,14 +64,15 @@ end
 
 ---@param bufnr integer
 ---@param cursor_pos integer[]
----@return GoRunParams
+---@return GoRunParams | nil, string | nil
 M.build_file_run_params = function(bufnr, cursor_pos)
-  print("funcs-bufnre", bufnr)
   local func_names = ts.get_func_names(bufnr)
   local cwd = find_go_mod_parent(bufnr) or vim.fn.getcwd()
   local module = get_module_path(cwd, bufnr) or "."
 
-  print("funcs", vim.inspect(func_names), bufnr)
+  if not func_names or #func_names == 0 then
+    return nil, "No tests to run"
+  end
 
   return {
     func_names = func_names,
@@ -80,12 +81,13 @@ M.build_file_run_params = function(bufnr, cursor_pos)
     module = module,
     bufnr = bufnr,
     cursor_pos = cursor_pos,
-  }
+  },
+    nil
 end
 
 ---@param bufnr integer
 ---@param cursor_pos integer[]
----@return GoRunParams
+---@return GoRunParams | nil, string | nil
 M.build_line_run_params = function(bufnr, cursor_pos)
   local func_names = ts.get_nearest_func_names(bufnr, cursor_pos)
   local sub_name = ts.get_sub_testcase_name(bufnr, cursor_pos)
@@ -97,6 +99,10 @@ M.build_line_run_params = function(bufnr, cursor_pos)
   local cwd = find_go_mod_parent(bufnr) or vim.fn.getcwd()
   local module = get_module_path(cwd, bufnr) or "."
 
+  if not func_names or #func_names == 0 then
+    return nil, "No tests to run"
+  end
+
   return {
     func_names = func_names,
     sub_func_names = sub_func_names,
@@ -104,17 +110,8 @@ M.build_line_run_params = function(bufnr, cursor_pos)
     module = module,
     bufnr = bufnr,
     cursor_pos = cursor_pos,
-  }
-end
-
----@param params GoRunParams
----@return boolean, string
-M.can_run = function(params)
-  if not params.func_names or #params.func_names == 0 then
-    return false, "No tests to run"
-  end
-
-  return true, ""
+  },
+    nil
 end
 
 ---@param params GoRunParams
