@@ -3,6 +3,42 @@ Quicktest improves your testing experience in real-time with flexible display op
 
 ![Example](https://github.com/quolpr/quicktest.nvim/assets/7958527/b3629bc9-2886-468c-a6e2-6b826dc404d0)
 
+## Api 
+
+```lua
+local qt = require 'quicktest'
+
+-- Choose your adapter, here all supported adapters are listed
+qt.setup({
+  adapters = {
+    require("quicktest.adapters.golang"),
+    require("quicktest.adapters.vitest"),
+  }
+})
+
+-- Find nearest test under cursor and run in popup
+qt.run_line('popup')
+-- Find nearest test under cursor and run in split
+qt.run_line('split')
+-- Find nearest test under cursor and run in currently opened window(popup or split)
+qt.run_line()
+
+-- Open or close split/popup if already opened, without running tests.
+-- Just open and close window.
+qt.toggle_win('popup')
+qt.toggle_win('split')
+
+-- Run all tests of file in popup/split
+qt.run_file('popup')
+qt.run_file('split')
+qt.run_line()
+
+-- Take previous test run and run in popup/split
+qt.run_previous('popup')
+qt.run_previous('split')
+qt.run_previous()
+```
+
 ## Installation
 
 Supported languages: Go, Typescript/Javascript(vitest)<br>
@@ -126,33 +162,6 @@ Using Lazy:
 
 If these features resonate with you, Quicktest might be just what you need!
 
-## Api 
-
-```lua
-local qt = require 'quicktest'
-
--- Find nearest test under cursor and run in popup
-qt.run_line('popup')
--- Find nearest test under cursor and run in split
-qt.run_line('split')
--- Find nearest test under cursor and run in currently opened window(popup or split)
-qt.run_line()
-
--- Open or close split/popup if already opened, without running tests.
--- Just open and close window.
-qt.toggle_win('popup')
-qt.toggle_win('split')
-
--- Run all tests of file in popup/split
-qt.run_file('popup')
-qt.run_file('split')
-qt.run_line()
-
--- Take previous test run and run in popup/split
-qt.run_previous('popup')
-qt.run_previous('split')
-qt.run_previous()
-```
 
 ## Motivation
 I like using Neotest, but there are several features that I really miss:
