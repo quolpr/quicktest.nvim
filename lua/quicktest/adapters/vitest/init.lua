@@ -1,51 +1,166 @@
 local Job = require("plenary.job")
+local ts = require("quicktest.adapters.vitest.ts")
+local fs = require("quicktest.adapters.vitest.fs")
 
 local M = {
   name = "vitest",
 }
 ---@class VitestRunParams
 ---@field func_names string[]
----@field bufnr integer
----@field cursor_pos integer[]
+---@field ns_name string
+---@field test_name string
+---@field cwd string
+---@field bin string
+---@field config_path string
+
+local function escape_test_pattern(s)
+  return (
+    s:gsub("%(", "%\\(")
+      :gsub("%)", "%\\)")
+      :gsub("%]", "%\\]")
+      :gsub("%[", "%\\[")
+      :gsub("%*", "%\\*")
+      :gsub("%+", "%\\+")
+      :gsub("%-", "%\\-")
+      :gsub("%?", "%\\?")
+      :gsub("%$", "%\\$")
+      :gsub("%^", "%\\^")
+      :gsub("%/", "%\\/")
+  )
+end
+
+local vitest_config_pattern = fs.root_pattern("{vite,vitest}.config.{js,ts,mjs,mts}")
+---@param path string
+---@return string|nil
+local function get_vitest_config(path)
+  local rootPath = vitest_config_pattern(path)
+
+  if not rootPath then
+    return nil
+  end
+
+  -- Ordered by config precedence (https://vitest.dev/config/#configuration)
+  local possibleVitestConfigNames = {
+    "vitest.config.ts",
+    "vitest.config.js",
+    "vite.config.ts",
+    "vite.config.js",
+    -- `.mts,.mjs` are sometimes needed (https://vitejs.dev/guide/migration.html#deprecate-cjs-node-api)
+    "vitest.config.mts",
+    "vitest.config.mjs",
+    "vite.config.mts",
+    "vite.config.mjs",
+  }
+
+  for _, configName in ipairs(possibleVitestConfigNames) do
+    local configPath = fs.path_join(rootPath, configName)
+
+    if fs.exists(configPath) then
+      return configPath
+    end
+  end
+
+  return nil
+end
+
+---@param cwd string
+local function find_bin(cwd)
+  while cwd and #cwd > 1 do
+    local bin = fs.path_join(cwd, "node_modules", ".bin", "vitest")
+
+    if fs.exists(bin) then
+      return bin
+    end
+
+    cwd = vim.fn.fnamemodify(cwd, ":h")
+  end
+
+  return nil
+end
 
 --- Builds parameters for running tests based on buffer number and cursor position.
 --- This function should be customized to extract necessary information from the buffer.
 ---@param bufnr integer
 ---@param cursor_pos integer[]
----@return VitestRunParams
+---@return VitestRunParams | nil, string | nil
 M.build_line_run_params = function(bufnr, cursor_pos)
-  print("bufnr", bufnr)
-  -- You can get current function name to run based on bufnr and cursor_pos
-  -- Check hot it is done for golang at `lua/quicktest/adapters/golang`
-  return {
-    bufnr = bufnr,
-    cursor_pos = cursor_pos,
-    func_names = {},
-    -- Add other parameters as needed
+  local cwd = fs.find_cwd(bufnr, "package.json")
+
+  if not cwd then
+    return nil, "Failed to find cwd"
+  end
+
+  local bin = find_bin(cwd)
+
+  if not bin then
+    return nil, "Failed to find vitest binary"
+  end
+
+  local params = {
+    ns_name = ts.get_current_test_name(bufnr, cursor_pos, "namespace"),
+    test_name = ts.get_current_test_name(bufnr, cursor_pos, "test"),
+    cwd = cwd,
+    bin = bin,
+    config_path = get_vitest_config(cwd) or "vitest.config.js",
+    -- Add other parameters as need ЖСd
   }
+  return params, nil
 end
 
 ---@param bufnr integer
 ---@param cursor_pos integer[]
----@return VitestRunParams
+---@return VitestRunParams | nil, string | nil
+---@diagnostic disable-next-line: unused-local
 M.build_file_run_params = function(bufnr, cursor_pos)
-  return {
-    bufnr = bufnr,
-    cursor_pos = cursor_pos,
-    -- Add other parameters as needed
-  }
-end
+  local cwd = fs.find_cwd(bufnr, "package.json")
 
---- Determines if the test can be run with the given parameters.
----@param params VitestRunParams
----@return boolean, string
-M.can_run = function(params)
-  if not params.func_names or #params.func_names == 0 then
-    return false, "No tests to run"
+  if not cwd then
+    return nil, "Failed to find cwd"
   end
 
-  -- Implement logic to determine if the test can be run
-  return true, ""
+  local bin = find_bin(cwd)
+
+  if not bin then
+    return nil, "Failed to find vitest binary"
+  end
+
+  local params = {
+    cwd = cwd,
+    bin = bin,
+    config_path = get_vitest_config(cwd) or "vitest.config.js",
+    -- Add other parameters as needed
+  }
+
+  return params, nil
+end
+
+---@param params VitestRunParams
+local function build_args(params)
+  local args = {}
+
+  if fs.exists(params.config_path) then
+    -- only use config if available
+    table.insert(args, "--config=" .. params.config_path)
+  end
+
+  local test_name_pattern = ".*"
+  if params.ns_name ~= "" and params.ns_name ~= nil then
+    test_name_pattern = "^ " .. escape_test_pattern(params.ns_name)
+  end
+
+  if params.test_name ~= "" and params.test_name ~= nil then
+    test_name_pattern = escape_test_pattern(params.test_name) .. "$"
+  end
+
+  vim.list_extend(args, {
+    "--watch=false",
+    "--silent=false",
+    "--reporter=verbose",
+    "--color",
+    "--testNamePattern=" .. test_name_pattern,
+  })
+
+  return args
 end
 
 --- Executes the test with the given parameters.
@@ -53,14 +168,21 @@ end
 ---@param send fun(data: any)
 ---@return integer
 M.run = function(params, send)
+  local args = build_args(params)
+
   local job = Job:new({
-    command = "test_command",
-    args = { "--some-flag" }, -- Modify based on how your test command needs to be structured
+    command = params.bin,
+    args = args, -- Modify based on how your test command needs to be structured
+    cwd = params.cwd,
     on_stdout = function(_, data)
-      send({ type = "stdout", output = data })
+      for k, v in pairs(vim.split(data, "\n")) do
+        send({ type = "stdout", output = v })
+      end
     end,
     on_stderr = function(_, data)
-      send({ type = "stderr", output = data })
+      for k, v in pairs(vim.split(data, "\n")) do
+        send({ type = "stderr", output = v })
+      end
     end,
     on_exit = function(_, return_val)
       send({ type = "exit", code = return_val })
@@ -72,10 +194,12 @@ M.run = function(params, send)
   return job.pid
 end
 
----@param params VitestRunParams
-M.title = function(params)
-  return "Running test: " .. vim.inspect(params)
-end
+-- ---@param params VitestRunParams
+-- M.title = function(params)
+--   local args = build_args(params)
+--
+--   return "Running test: " .. table.concat({ unpack(args, 2) }, " ")
+-- end
 
 --- Handles actions to take after the test run, based on the results.
 ---@param params any
@@ -89,7 +213,10 @@ end
 ---@return boolean
 M.is_enabled = function(bufnr)
   local bufname = vim.api.nvim_buf_get_name(bufnr)
-  return vim.endswith(bufname, "test.ts") or vim.endswith(bufname, "test.js")
+  return vim.endswith(bufname, "test.ts")
+    or vim.endswith(bufname, "test.js")
+    or vim.endswith(bufname, "spec.ts")
+    or vim.endswith(bufname, "spec.js")
 end
 
 return M

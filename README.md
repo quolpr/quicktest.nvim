@@ -9,7 +9,14 @@ Simple configurations:
 
 ```lua
 local qt = require("quicktest")
-qt.setup()
+
+-- Choose your adapter, here all supported adapters are listed
+qt.setup({
+  adapters = {
+    require("quicktest.adapters.golang"),
+    require("quicktest.adapters.vitest"),
+  }
+})
 
 vim.keymap.set("n", "<leader>tr", qt.run_line, {
   desc = "[T]est [R]un",
@@ -37,7 +44,17 @@ Using Lazy:
 ```lua
 {
   "quolpr/quicktest.nvim",
-  opts = {},
+  config = function()
+    local qt = require("quicktest")
+
+    qt.setup({
+      -- Choose your adapter, here all supported adapters are listed
+      adapters = {
+        require("quicktest.adapters.golang"),
+        require("quicktest.adapters.vitest"),
+      }
+    })
+  end,
   dependencies = {
     "nvim-lua/plenary.nvim",
     "MunifTanjim/nui.nvim",
@@ -151,9 +168,9 @@ I like using Neotest, but there are several features that I really miss:
 Right now only `go` is supported! Feel free to open PR to add other integrations.
 
 
-## Building your own plugin
+## Building your own adapter
 
-Here is the template of how plugin for any language could be written. For more examples just check `lua/quicktest/adapters`. For tresitter methods investigation you can take code from adapters of neotest from https://github.com/nvim-neotest/neotest?tab=readme-ov-file#supported-runners
+Here is the template of how adapter for any language could be written. For more examples just check `lua/quicktest/adapters`. For tresitter methods investigation you can take code from adapters of neotest from https://github.com/nvim-neotest/neotest?tab=readme-ov-file#supported-runners
 
 ```lua
 local Job = require("plenary.job")
@@ -170,7 +187,7 @@ local M = {
 --- This function should be customized to extract necessary information from the buffer.
 ---@param bufnr integer
 ---@param cursor_pos integer[]
----@return MyRunParams
+---@return MyRunParams, nil | string
 M.build_line_run_params = function(bufnr, cursor_pos)
   -- print("bufnr", bufnr)
   -- You can get current function name to run based on bufnr and cursor_pos
@@ -180,30 +197,18 @@ M.build_line_run_params = function(bufnr, cursor_pos)
     cursor_pos = cursor_pos,
     func_names = {},
     -- Add other parameters as needed
-  }
+  }, nil
 end
 
 ---@param bufnr integer
 ---@param cursor_pos integer[]
----@return MyRunParams
+---@return MyRunParams, nil | string
 M.build_file_run_params = function(bufnr, cursor_pos)
   return {
     bufnr = bufnr,
     cursor_pos = cursor_pos,
     -- Add other parameters as needed
-  }
-end
-
---- Determines if the test can be run with the given parameters.
----@param params MyRunParams
----@return boolean, string
-M.can_run = function(params)
-  if not params.func_names or #params.func_names == 0 then
-    return false, "No tests to run"
-  end
-
-  -- Implement logic to determine if the test can be run
-  return true, ""
+  }, nil
 end
 
 --- Executes the test with the given parameters.
@@ -230,9 +235,10 @@ M.run = function(params, send)
   return job.pid
 end
 
+--- Optional title of the test run
 ---@param params MyRunParams
 M.title = function(params)
-  return "Running test: " .. vim.inspect(params)
+  return "Running test"
 end
 
 --- Handles actions to take after the test run, based on the results.
@@ -242,7 +248,7 @@ M.after_run = function(params, results)
   -- Implement actions based on the results, such as updating UI or handling errors
 end
 
---- Checks if the plugin is enabled for the given buffer.
+--- Checks if the adapter is enabled for the given buffer.
 ---@param bufnr integer
 ---@return boolean
 M.is_enabled = function(bufnr)

@@ -2,9 +2,8 @@
 local module = require("quicktest.module")
 
 local config = {
-  plugins = {
+  adapters = {
     require("quicktest.adapters.golang"),
-    require("quicktest.adapters.vitest"),
   },
 }
 
