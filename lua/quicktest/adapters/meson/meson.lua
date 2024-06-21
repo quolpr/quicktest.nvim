@@ -26,4 +26,29 @@ function M.get_targets()
   return json5.parse(output)
 end
 
+function M.compile()
+  local build_out = {}
+  local retval = -1
+
+  local build = Job:new({
+    command = "meson",
+    args = { "compile", "-C", "build" },
+    on_stdout = function(_, data)
+      table.insert(build_out, data)
+    end,
+    on_stderr = function(_, data)
+      table.insert(build_out, data)
+    end,
+    on_exit = function(_, return_val)
+      retval = return_val
+    end,
+  })
+  build:start()
+  Job.join(build)
+  return {
+    return_val = retval,
+    text = build_out,
+  }
+end
+
 return M

@@ -1,5 +1,6 @@
 local Job = require("plenary.job")
 local util = require("quicktest.adapters.meson.util")
+local meson = require("quicktest.adapters.meson.meson")
 
 local M = {
   name = "meson test runner for C assuming Criterion test frame work",
@@ -41,7 +42,15 @@ end
 ---@param send fun(data: any)
 ---@return integer
 M.run = function(params, send)
-  if util.build_tests(send) == false then
+  -- Not needed for running tests, but if we explicitly call meson compile here
+  -- then we can capture the build outut and show potential build errors in the UI.
+  -- Otherwise the test will fail silently-ish with little insight to the user.
+  local compile = meson.compile()
+  if compile.return_val ~= 0 then
+    for _, line in ipairs(compile.text) do
+      send({ type = "stderr", output = line })
+    end
+    send({ type = "exit", code = compile.return_val })
     return -1
   end
 

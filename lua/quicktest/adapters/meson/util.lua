@@ -103,34 +103,6 @@ function M.get_nearest_test(bufnr, cursor_pos)
   end
 end
 
-function M.build_tests(send)
-  local build_ok = false
-  local build_out = {}
-
-  local build = Job:new({
-    command = "meson",
-    args = { "compile", "-C", "build" },
-    on_stdout = function(_, data)
-      table.insert(build_out, data)
-    end,
-    on_stderr = function(_, data)
-      send({ type = "stderr", output = data })
-    end,
-    on_exit = function(_, return_val)
-      build_ok = return_val == 0
-      if build_ok == false then
-        for _, value in ipairs(build_out) do
-          send({ type = "stdout", output = value })
-        end
-        send({ type = "exit", code = return_val })
-      end
-    end,
-  })
-  build:start()
-  Job.join(build)
-  return build_ok
-end
-
 function M.make_test_args(params)
   local test_args = { "test", "-C", "build" }
 
