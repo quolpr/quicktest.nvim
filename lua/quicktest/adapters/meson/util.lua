@@ -3,6 +3,22 @@ local meson = require("quicktest.adapters.meson.meson")
 
 local M = {}
 
+---Split string on the given separator
+---Copied from https://www.tutorialspoint.com/how-to-split-a-string-in-lua-programming
+---@param inputstr string
+---@param sep string
+---@return string[]
+function M.splitstr(inputstr, sep)
+  if sep == nil then
+    sep = "%s"
+  end
+  local t = {}
+  for str in string.gmatch(inputstr, "([^" .. sep .. "]+)") do
+    table.insert(t, str)
+  end
+  return t
+end
+
 ---@class JsonContext
 ---@field open boolean State indicating opening bracket has been found and data should be added to the text field
 ---@field text string All JSON text
@@ -111,6 +127,17 @@ function M.make_test_args(test_exe, test_suite, test_name)
   local ta = "--filter=" .. ts .. "/" .. tn .. " --json"
   table.insert(test_args, "--test-args=" .. ta)
   return test_args
+end
+
+---Locate the line number with the error from the given error message
+---Example: /some/path/to/test_module.c:42:
+---@param msg string
+---@return integer | nil
+function M.locate_error(msg)
+  local s = M.splitstr(msg, ":")
+  if s[2] then
+    return tonumber(s[2])
+  end
 end
 
 return M

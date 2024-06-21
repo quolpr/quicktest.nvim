@@ -1,19 +1,6 @@
+local util = require("quicktest.adapters.meson.util")
+
 local M = {}
----Split string on the given separator
----Copied from https://www.tutorialspoint.com/how-to-split-a-string-in-lua-programming
----@param inputstr string
----@param sep string
----@return string[]
-local function splitstr(inputstr, sep)
-  if sep == nil then
-    sep = "%s"
-  end
-  local t = {}
-  for str in string.gmatch(inputstr, "([^" .. sep .. "]+)") do
-    table.insert(t, str)
-  end
-  return t
-end
 
 ---Parse a test declaration to get the name of the suite and test
 ---This function assumes the Criterion unit test framework
@@ -24,14 +11,14 @@ end
 ---@param line string
 ---@return table
 function M.get_test_suite_and_name(line)
-  local parts = splitstr(line, "(")
+  local parts = util.splitstr(line, "(")
   local index = 1
 
   if vim.startswith(parts[1], "ParameterizedTest") then
     index = 2 -- Skip over param
   end
 
-  parts = splitstr(parts[2], ",")
+  parts = util.splitstr(parts[2], ",")
   return {
     test_suite = string.gsub(parts[index], "%s+", ""), -- Trim whitespace
     test_name = string.gsub(parts[index + 1], "%s+", ""),
