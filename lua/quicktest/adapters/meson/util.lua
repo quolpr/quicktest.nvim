@@ -85,10 +85,11 @@ end
 ---@note This function finds the first match. There is nothing preventing someone from using the same source file in multiple test exectuables,
 ---so that is a known limitation and is currently not handled.
 ---@param bufnr integer
+---@param builddir string
 ---@return string | nil
-function M.get_test_exe_from_buffer(bufnr)
+function M.get_test_exe_from_buffer(bufnr, builddir)
   local bufname = vim.api.nvim_buf_get_name(bufnr)
-  local targets = meson.get_targets()
+  local targets = meson.get_targets(builddir)
   for _, target in ipairs(targets) do
     -- print(vim.inspect(target["target_sources"]))
     for _, target_source in ipairs(target["target_sources"]) do

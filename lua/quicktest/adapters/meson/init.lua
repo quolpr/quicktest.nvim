@@ -8,6 +8,7 @@ local ns = vim.api.nvim_create_namespace("quicktest-meson")
 local M = {
   name = "meson test runner for C assuming Criterion test frame work",
   test_results = {},
+  builddir = "build",
 }
 
 ---@class Test
@@ -24,7 +25,7 @@ local M = {
 ---@param cursor_pos integer[]
 ---@return MesonTestParams
 M.build_file_run_params = function(bufnr, cursor_pos)
-  local test_exe = util.get_test_exe_from_buffer(bufnr)
+  local test_exe = util.get_test_exe_from_buffer(bufnr, M.builddir)
 
   if test_exe == nil then
     return {}
@@ -42,8 +43,8 @@ end
 ---@param cursor_pos integer[]
 ---@return MesonTestParams
 M.build_line_run_params = function(bufnr, cursor_pos)
-  local test_exe = util.get_test_exe_from_buffer(bufnr)
   local line = test_parser.get_nearest_test(bufnr, cursor_pos)
+  local test_exe = util.get_test_exe_from_buffer(bufnr, M.builddir)
 
   if line == nil or test_exe == nil then
     return {}
@@ -75,7 +76,7 @@ M.run = function(params, send)
   -- However, we explicitly call meson compile here to capture the build output so that
   -- we can show potential build errors in the UI.
   -- Otherwise the test will fail silently-ish providing little insight to the user.
-  local compile = meson.compile()
+  local compile = meson.compile(M.builddir)
   if compile.return_val ~= 0 then
     for _, line in ipairs(compile.text) do
       send({ type = "stderr", output = line })

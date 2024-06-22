@@ -6,13 +6,14 @@ local M = {}
 --- Obtain build definitions for all targets.
 --- Calls 'meson introspect --targets build' under the hood from the current directory.
 --- This function returns a table with parsed JSON data
+--- @param builddir string
 ---@return table
-function M.get_targets()
+function M.get_targets(builddir)
   local output = ""
   local job = Job:new({
 
     command = "meson",
-    args = { "introspect", "--targets", "build" },
+    args = { "introspect", "--targets", builddir },
     on_stdout = function(_, data)
       output = output .. data
     end,
@@ -35,15 +36,16 @@ end
 ---@field text string[]
 
 --- Compile the project
---- Calls 'meson -C compile build' under the hood from the current directory
+--- Calls 'meson -C compile builddir' under the hood from the current directory
+--- @param builddir string
 --- @return CompileResult
-function M.compile()
+function M.compile(builddir)
   local build_out = {}
   local retval = -1
 
   local build = Job:new({
     command = "meson",
-    args = { "compile", "-C", "build" },
+    args = { "compile", "-C", builddir },
     on_stdout = function(_, data)
       table.insert(build_out, data)
     end,
