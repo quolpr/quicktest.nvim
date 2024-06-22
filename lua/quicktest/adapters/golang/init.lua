@@ -114,6 +114,42 @@ M.build_line_run_params = function(bufnr, cursor_pos)
     nil
 end
 
+---@param bufnr integer
+---@param cursor_pos integer[]
+---@return GoRunParams | nil, string | nil
+M.build_all_run_params = function(bufnr, cursor_pos)
+  local cwd = find_go_mod_parent(bufnr) or vim.fn.getcwd()
+  local module = "./..."
+
+  return {
+    func_names = {},
+    sub_func_names = {},
+    cwd = cwd,
+    module = module,
+    bufnr = bufnr,
+    cursor_pos = cursor_pos,
+  },
+    nil
+end
+
+---@param bufnr integer
+---@param cursor_pos integer[]
+---@return GoRunParams | nil, string | nil
+M.build_dir_run_params = function(bufnr, cursor_pos)
+  local cwd = find_go_mod_parent(bufnr) or vim.fn.getcwd()
+  local module = get_module_path(cwd, bufnr) or "."
+
+  return {
+    func_names = {},
+    sub_func_names = {},
+    cwd = cwd,
+    module = module,
+    bufnr = bufnr,
+    cursor_pos = cursor_pos,
+  },
+    nil
+end
+
 ---@param params GoRunParams
 ---@param send fun(data: CmdData)
 ---@return integer

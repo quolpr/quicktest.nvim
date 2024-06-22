@@ -23,15 +23,25 @@ qt.run_line('split')
 -- Find nearest test under cursor and run in currently opened window(popup or split)
 qt.run_line()
 
--- Open or close split/popup if already opened, without running tests.
--- Just open and close window.
-qt.toggle_win('popup')
-qt.toggle_win('split')
-
 -- Run all tests of file in popup/split
 qt.run_file('popup')
 qt.run_file('split')
 qt.run_line()
+
+-- Run all tests of current file dir in popup/split
+qt.run_dir('popup')
+qt.run_dir('split')
+qt.run_dir()
+
+-- Run all tests of project in popup/split
+qt.run_all('popup')
+qt.run_all('split')
+qt.run_all()
+
+-- Open or close split/popup if already opened, without running tests.
+-- Just open and close window.
+qt.toggle_win('popup')
+qt.toggle_win('split')
 
 -- Take previous test run and run in popup/split
 qt.run_previous('popup')
@@ -62,6 +72,12 @@ vim.keymap.set("n", "<leader>tr", qt.run_line, {
 })
 vim.keymap.set("n", "<leader>tR", qt.run_file, {
   desc = "[T]est [R]un file",
+})
+vim.keymap.set("n", "<leader>td", qt.run_dir, {
+  desc = "[T]est Run [D]ir",
+})
+vim.keymap.set("n", "<leader>ta", qt.run_all, {
+  desc = "[T]est Run [A]ll",
 })
 vim.keymap.set("n", "<leader>tR", qt.run_previous, {
   desc = "[T]est Run [P]revious",
@@ -120,6 +136,24 @@ Using Lazy:
         qt.run_file()
       end,
       desc = "[T]est [R]un file",
+    },
+    {
+      '<leader>td',
+      function()
+        local qt = require 'quicktest'
+
+        qt.run_dir()
+      end,
+      desc = '[T]est Run [D]ir',
+    },
+    {
+      '<leader>ta',
+      function()
+        local qt = require 'quicktest'
+
+        qt.run_all()
+      end,
+      desc = '[T]est Run [A]ll',
     },
     {
       "<leader>tp",
@@ -190,32 +224,58 @@ local M = {
 ---@field bufnr integer
 ---@field cursor_pos integer[]
 
+--- Optional:
 --- Builds parameters for running tests based on buffer number and cursor position.
 --- This function should be customized to extract necessary information from the buffer.
 ---@param bufnr integer
 ---@param cursor_pos integer[]
 ---@return MyRunParams, nil | string
-M.build_line_run_params = function(bufnr, cursor_pos)
-  -- You can get current function name to run based on bufnr and cursor_pos
-  -- Check hot it is done for golang at `lua/quicktest/adapters/golang`
-  return {
-    bufnr = bufnr,
-    cursor_pos = cursor_pos,
-    func_names = {},
-    -- Add other parameters as needed
-  }, nil
-end
+-- M.build_line_run_params = function(bufnr, cursor_pos)
+--   -- You can get current function name to run based on bufnr and cursor_pos
+--   -- Check hot it is done for golang at `lua/quicktest/adapters/golang`
+--   return {
+--     bufnr = bufnr,
+--     cursor_pos = cursor_pos,
+--     func_names = {},
+--     -- Add other parameters as needed
+--   }, nil
+-- end
 
+--- Optional:
 ---@param bufnr integer
 ---@param cursor_pos integer[]
 ---@return MyRunParams, nil | string
-M.build_file_run_params = function(bufnr, cursor_pos)
-  return {
-    bufnr = bufnr,
-    cursor_pos = cursor_pos,
-    -- Add other parameters as needed
-  }, nil
-end
+-- M.build_file_run_params = function(bufnr, cursor_pos)
+--   return {
+--     bufnr = bufnr,
+--     cursor_pos = cursor_pos,
+--     -- Add other parameters as needed
+--   }, nil
+-- end
+
+--- Optional:
+---@param bufnr integer
+---@param cursor_pos integer[]
+---@return MyRunParams, nil | string
+-- M.build_dir_run_params = function(bufnr, cursor_pos)
+--   return {
+--     bufnr = bufnr,
+--     cursor_pos = cursor_pos,
+--     -- Add other parameters as needed
+--   }, nil
+-- end
+
+--- Optional:
+---@param bufnr integer
+---@param cursor_pos integer[]
+---@return MyRunParams, nil | string
+-- M.build_all_run_params = function(bufnr, cursor_pos)
+--   return {
+--     bufnr = bufnr,
+--     cursor_pos = cursor_pos,
+--     -- Add other parameters as needed
+--   }, nil
+-- end
 
 --- Executes the test with the given parameters.
 ---@param params MyRunParams
@@ -241,18 +301,18 @@ M.run = function(params, send)
   return job.pid
 end
 
----Optional title of the test run
+--- Optional: title of the test run
 ---@param params MyRunParams
 -- M.title = function(params)
 --   return "Running test"
 -- end
 
---- Handles actions to take after the test run, based on the results.
+--- Optional: handles actions to take after the test run, based on the results.
 ---@param params any
 ---@param results any
-M.after_run = function(params, results)
-  -- Implement actions based on the results, such as updating UI or handling errors
-end
+-- M.after_run = function(params, results)
+--   -- Implement actions based on the results, such as updating UI or handling errors
+-- end
 
 --- Checks if the adapter is enabled for the given buffer.
 ---@param bufnr integer

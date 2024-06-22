@@ -197,8 +197,9 @@ function M.run(adapter, params)
 end
 
 --- @param config QuicktestConfig
+--- @param type 'line' | 'file' | 'dir' | 'all'
 --- @param mode WinMode?
-function M.run_line(config, mode)
+function M.prepare_and_run(config, type, mode)
   mode = mode or M.current_win_mode()
   local current_buffer = api.nvim_get_current_buf()
   local win = vim.api.nvim_get_current_win() -- Get the current active window
@@ -208,42 +209,22 @@ function M.run_line(config, mode)
   local adapter = get_adapter(config)
 
   if not adapter then
-    return notify.warn("Can't test this file - no adapter found")
+    return notify.warn("Failed to test: no suitable adapter found.")
+  end
+
+  local method = adapter["build_" .. type .. "_run_params"]
+
+  if not method then
+    return notify.warn("Failed to test: adapter '" .. adapter.name .. "' does not support '" .. type .. "' run.")
+  end
+
+  local params, error = method(current_buffer, cursor_pos)
+
+  if error ~= nil and error ~= "" then
+    return notify.warn("Failed to test: " .. error .. ".")
   end
 
   M.try_open_win(mode)
-
-  local params, error = adapter.build_line_run_params(current_buffer, cursor_pos)
-
-  if error ~= nil and error ~= "" then
-    return notify.warn("Failed to run test: " .. error)
-  end
-
-  M.run(adapter, params)
-end
-
---- @param config QuicktestConfig
---- @param mode WinMode?
-function M.run_file(config, mode)
-  mode = mode or M.current_win_mode()
-  local current_buffer = api.nvim_get_current_buf()
-  local win = vim.api.nvim_get_current_win() -- Get the current active window
-  local cursor_pos = vim.api.nvim_win_get_cursor(win) -- Get the cursor position in the window
-
-  --- @type QuicktestAdapter
-  local adapter = get_adapter(config)
-
-  if not adapter then
-    return notify.warn("No adapter found")
-  end
-
-  M.try_open_win(mode)
-
-  local params, error = adapter.build_file_run_params(current_buffer, cursor_pos)
-
-  if error ~= nil and error ~= "" then
-    return notify.warn("Failed to run test: " .. error)
-  end
 
   M.run(adapter, params)
 end
@@ -305,11 +286,5 @@ function M.toggle_win(mode)
     end
   end
 end
-
--- if baleia == nil then
---   baleia = require('baleia').setup {
---     async = false,
---   }
--- end
 
 return M
