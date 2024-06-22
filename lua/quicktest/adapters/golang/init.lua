@@ -1,30 +1,21 @@
+local ts = require("quicktest.adapters.golang.ts")
+local cmd = require("quicktest.adapters.golang.cmd")
+local fs = require("quicktest.fs-utils")
+local Job = require("plenary.job")
+
 local M = {
   name = "go",
 }
-
-local ts = require("quicktest.adapters.golang.ts")
-local cmd = require("quicktest.adapters.golang.cmd")
-
-local Job = require("plenary.job")
 
 local ns = vim.api.nvim_create_namespace("quicktest-go")
 
 --- @param bufnr integer
 --- @return string | nil
-local function find_go_mod_parent(bufnr)
+local function find_cwd(bufnr)
   local buffer_name = vim.api.nvim_buf_get_name(bufnr) -- Get the current buffer's file path
   local path = vim.fn.fnamemodify(buffer_name, ":p:h") -- Get the full path of the directory containing the file
 
-  -- Check each parent directory until the root is reached or 'go.mod' is found
-  while path and #path > 1 do
-    local go_mod_path = path .. "/go.mod"
-    if vim.fn.filereadable(go_mod_path) == 1 then
-      return path -- Return the path if 'go.mod' is found
-    end
-    path = vim.fn.fnamemodify(path, ":h") -- Move up one directory level
-  end
-
-  return nil -- Return nil if 'go.mod' is not found in any parent directory
+  return fs.find_ancestor_of_file(path, "go.mod")
 end
 
 ---@param cwd string
@@ -67,7 +58,7 @@ end
 ---@return GoRunParams | nil, string | nil
 M.build_file_run_params = function(bufnr, cursor_pos)
   local func_names = ts.get_func_names(bufnr)
-  local cwd = find_go_mod_parent(bufnr) or vim.fn.getcwd()
+  local cwd = find_cwd(bufnr) or vim.fn.getcwd()
   local module = get_module_path(cwd, bufnr) or "."
 
   if not func_names or #func_names == 0 then
@@ -96,7 +87,7 @@ M.build_line_run_params = function(bufnr, cursor_pos)
   if sub_name then
     sub_func_names = { sub_name }
   end
-  local cwd = find_go_mod_parent(bufnr) or vim.fn.getcwd()
+  local cwd = find_cwd(bufnr) or vim.fn.getcwd()
   local module = get_module_path(cwd, bufnr) or "."
 
   if not func_names or #func_names == 0 then
@@ -118,7 +109,7 @@ end
 ---@param cursor_pos integer[]
 ---@return GoRunParams | nil, string | nil
 M.build_all_run_params = function(bufnr, cursor_pos)
-  local cwd = find_go_mod_parent(bufnr) or vim.fn.getcwd()
+  local cwd = find_cwd(bufnr) or vim.fn.getcwd()
   local module = "./..."
 
   return {
@@ -136,7 +127,7 @@ end
 ---@param cursor_pos integer[]
 ---@return GoRunParams | nil, string | nil
 M.build_dir_run_params = function(bufnr, cursor_pos)
-  local cwd = find_go_mod_parent(bufnr) or vim.fn.getcwd()
+  local cwd = find_cwd(bufnr) or vim.fn.getcwd()
   local module = get_module_path(cwd, bufnr) or "."
 
   return {

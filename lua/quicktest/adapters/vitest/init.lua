@@ -1,6 +1,6 @@
 local Job = require("plenary.job")
 local ts = require("quicktest.adapters.vitest.ts")
-local fs = require("quicktest.adapters.vitest.fs")
+local fs = require("quicktest.fs-utils")
 
 local M = {
   name = "vitest",
@@ -53,9 +53,9 @@ local function get_vitest_config(path)
   }
 
   for _, configName in ipairs(possibleVitestConfigNames) do
-    local configPath = fs.path_join(rootPath, configName)
+    local configPath = fs.path.join(rootPath, configName)
 
-    if fs.exists(configPath) then
+    if fs.path.exists(configPath) then
       return configPath
     end
   end
@@ -66,9 +66,9 @@ end
 ---@param cwd string
 local function find_bin(cwd)
   while cwd and #cwd > 1 do
-    local bin = fs.path_join(cwd, "node_modules", ".bin", "vitest")
+    local bin = fs.path.join(cwd, "node_modules", ".bin", "vitest")
 
-    if fs.exists(bin) then
+    if fs.path.exists(bin) then
       return bin
     end
 
@@ -78,13 +78,20 @@ local function find_bin(cwd)
   return nil
 end
 
+local function find_cwd(bufnr)
+  local buffer_name = vim.api.nvim_buf_get_name(bufnr) -- Get the current buffer's file path
+  local path = vim.fn.fnamemodify(buffer_name, ":p:h") -- Get the full path of the directory containing the file
+
+  return fs.find_ancestor_of_file(path, "package.json")
+end
+
 --- Builds parameters for running tests based on buffer number and cursor position.
 --- This function should be customized to extract necessary information from the buffer.
 ---@param bufnr integer
 ---@param cursor_pos integer[]
 ---@return VitestRunParams | nil, string | nil
 M.build_line_run_params = function(bufnr, cursor_pos)
-  local cwd = fs.find_cwd(bufnr, "package.json")
+  local cwd = find_cwd(bufnr)
 
   if not cwd then
     return nil, "Failed to find cwd"
@@ -112,7 +119,7 @@ end
 ---@return VitestRunParams | nil, string | nil
 ---@diagnostic disable-next-line: unused-local
 M.build_file_run_params = function(bufnr, cursor_pos)
-  local cwd = fs.find_cwd(bufnr, "package.json")
+  local cwd = find_cwd(bufnr)
 
   if not cwd then
     return nil, "Failed to find cwd"
@@ -138,7 +145,7 @@ end
 local function build_args(params)
   local args = {}
 
-  if fs.exists(params.config_path) then
+  if fs.path.exists(params.config_path) then
     -- only use config if available
     table.insert(args, "--config=" .. params.config_path)
   end
