@@ -43,13 +43,23 @@ M.run_previous = function(mode)
 end
 
 --- @param mode WinMode?
-M.run_file = function(mode)
-  return module.run_file(M.config, mode)
+M.run_line = function(mode)
+  return module.prepare_and_run(M.config, "line", mode)
 end
 
 --- @param mode WinMode?
-M.run_line = function(mode)
-  return module.run_line(M.config, mode)
+M.run_file = function(mode)
+  return module.prepare_and_run(M.config, "file", mode)
+end
+
+--- @param mode WinMode?
+M.run_dir = function(mode)
+  return module.prepare_and_run(M.config, "dir", mode)
+end
+
+--- @param mode WinMode?
+M.run_all = function(mode)
+  return module.prepare_and_run(M.config, "all", mode)
 end
 
 -- module.run(require("quicktest.adapters.golang"), {
