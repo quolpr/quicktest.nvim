@@ -20,6 +20,10 @@ Key features include identifying the nearest function and triggering its test,
 rerunning previous tests from any location, and live scrolling of results
 alongside a running timer for immediate feedback.
 
+Currently supported languages: Go, Typescript/Javascript(vitest), Elixir. There
+is also a template in Readme below about how to create own adapter. Should be
+pretty easy!
+
 
 API                                           *my-template-docs-quicktest-api*
 
@@ -31,6 +35,7 @@ API                                           *my-template-docs-quicktest-api*
       adapters = {
         require("quicktest.adapters.golang"),
         require("quicktest.adapters.vitest"),
+        require("quicktest.adapters.elixir"),
       }
     })
     
@@ -84,6 +89,7 @@ Simple configurations:
       adapters = {
         require("quicktest.adapters.golang"),
         require("quicktest.adapters.vitest"),
+        require("quicktest.adapters.elixir"),
       }
     })
     
@@ -127,6 +133,7 @@ Using Lazy:
           adapters = {
             require("quicktest.adapters.golang"),
             require("quicktest.adapters.vitest"),
+            require("quicktest.adapters.elixir"),
           }
         })
       end,
