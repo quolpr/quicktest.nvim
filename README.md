@@ -175,11 +175,6 @@ I like using Neotest, but there are several features that I really miss:
 7. Depending on the task, sometimes a popup is best, sometimes a split window. It would be great if the plugin could adapt to the context, potentially displaying results in both views simultaneously.
 8. An easy-to-use API for adding new integrations while maintaining flexibility is also needed.
 
-## Supported languages
-
-Right now only `go` is supported! Feel free to open PR to add other integrations.
-
-
 ## Building your own adapter
 
 Here is the template of how adapter for any language could be written. For more examples just check `lua/quicktest/adapters`. For tresitter methods investigation you can take code from adapters of neotest from https://github.com/nvim-neotest/neotest?tab=readme-ov-file#supported-runners
