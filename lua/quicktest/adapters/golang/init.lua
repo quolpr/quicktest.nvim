@@ -1,6 +1,6 @@
 local ts = require("quicktest.adapters.golang.ts")
 local cmd = require("quicktest.adapters.golang.cmd")
-local fs = require("quicktest.fs-utils")
+local fs = require("quicktest.fs_utils")
 local Job = require("plenary.job")
 
 local M = {

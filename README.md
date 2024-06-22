@@ -1,6 +1,8 @@
 # Quicktest
 Quicktest improves your testing experience in real-time with flexible display options like popups or split windows, customized to your workflow preferences. Key features include identifying the nearest function and triggering its test, rerunning previous tests from any location, and live scrolling of results alongside a running timer for immediate feedback.
 
+Currently supported languages: Go, Typescript/Javascript(vitest), Elixir. There is also a template in Readme below about how to create own adapter. Should be pretty easy!
+
 ![Example](https://github.com/quolpr/quicktest.nvim/assets/7958527/b3629bc9-2886-468c-a6e2-6b826dc404d0)
 
 ## Api 
@@ -13,6 +15,7 @@ qt.setup({
   adapters = {
     require("quicktest.adapters.golang"),
     require("quicktest.adapters.vitest"),
+    require("quicktest.adapters.elixir"),
   }
 })
 
@@ -64,6 +67,7 @@ qt.setup({
   adapters = {
     require("quicktest.adapters.golang"),
     require("quicktest.adapters.vitest"),
+    require("quicktest.adapters.elixir"),
   }
 })
 
@@ -107,6 +111,7 @@ Using Lazy:
       adapters = {
         require("quicktest.adapters.golang"),
         require("quicktest.adapters.vitest"),
+        require("quicktest.adapters.elixir"),
       }
     })
   end,

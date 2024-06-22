@@ -209,4 +209,23 @@ function M.root_pattern(...)
   end
 end
 
+-- Function to extract the filename from a full path based on the base path
+function M.extract_filename(base_path, full_path)
+  -- Ensure the cwd ends with a slash to avoid partial matches
+  if string.sub(base_path, -1) ~= "/" then
+    base_path = base_path .. "/"
+  end
+
+  -- Check if the full path starts with the cwd
+  local start_pos = string.find(full_path, base_path, 1, true)
+  if start_pos then
+    -- Remove the cwd part, including any leading slash from the remaining path
+    local filename = string.sub(full_path, #base_path + 1)
+    return filename
+  else
+    -- Return the full path if it does not start with cwd
+    return full_path
+  end
+end
+
 return M

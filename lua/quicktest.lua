@@ -1,11 +1,10 @@
 -- main module file
 local module = require("quicktest.module")
 
-print("hi")
-
 local config = {
   adapters = {
     require("quicktest.adapters.golang"),
+    require("quicktest.adapters.elixir"),
   },
 }
 

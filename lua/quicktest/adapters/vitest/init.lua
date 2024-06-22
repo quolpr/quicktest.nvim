@@ -1,6 +1,7 @@
 local Job = require("plenary.job")
-local ts = require("quicktest.adapters.vitest.ts")
-local fs = require("quicktest.fs-utils")
+local q = require("quicktest.adapters.vitest.query")
+local ts = require("quicktest.ts")
+local fs = require("quicktest.fs_utils")
 
 local M = {
   name = "vitest",
@@ -104,8 +105,8 @@ M.build_line_run_params = function(bufnr, cursor_pos)
   end
 
   local params = {
-    ns_name = ts.get_current_test_name(bufnr, cursor_pos, "namespace"),
-    test_name = ts.get_current_test_name(bufnr, cursor_pos, "test"),
+    ns_name = ts.get_current_test_name(q, bufnr, cursor_pos, "namespace"),
+    test_name = ts.get_current_test_name(q, bufnr, cursor_pos, "test"),
     cwd = cwd,
     bin = bin,
     config_path = get_vitest_config(cwd) or "vitest.config.js",
@@ -208,12 +209,12 @@ end
 --   return "Running test: " .. table.concat({ unpack(args, 2) }, " ")
 -- end
 
---- Handles actions to take after the test run, based on the results.
----@param params any
----@param results any
-M.after_run = function(params, results)
-  -- Implement actions based on the results, such as updating UI or handling errors
-end
+-- --- Handles actions to take after the test run, based on the results.
+-- ---@param params any
+-- ---@param results any
+-- M.after_run = function(params, results)
+--   -- Implement actions based on the results, such as updating UI or handling errors
+-- end
 
 --- Checks if the plugin is enabled for the given buffer.
 ---@param bufnr integer

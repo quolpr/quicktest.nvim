@@ -154,7 +154,9 @@ function M.run(adapter, params)
 
           print_status()
           current_job = nil
-          adapter.after_run(params, results)
+          if adapter.after_run then
+            adapter.after_run(params, results)
+          end
         end
 
         if result.type == "stdout" then
