@@ -1,4 +1,4 @@
-*my-template-docs.txt*      For Neovim >= 0.8.0      Last change: 2024 June 21
+*my-template-docs.txt*      For Neovim >= 0.8.0      Last change: 2024 June 22
 
 ==============================================================================
 Table of Contents                         *my-template-docs-table-of-contents*
@@ -8,7 +8,6 @@ Table of Contents                         *my-template-docs-table-of-contents*
   - Installation                     |my-template-docs-quicktest-installation|
   - Features                             |my-template-docs-quicktest-features|
   - Motivation                         |my-template-docs-quicktest-motivation|
-  - Supported languages       |my-template-docs-quicktest-supported-languages|
   - Building your own adapter|my-template-docs-quicktest-building-your-own-adapter|
 2. Links                                              |my-template-docs-links|
 
@@ -198,12 +197,6 @@ I like using Neotest, but there are several features that I really miss:
 6. Make output to automatically scroll while the test is running.
 7. Depending on the task, sometimes a popup is best, sometimes a split window. It would be great if the plugin could adapt to the context, potentially displaying results in both views simultaneously.
 8. An easy-to-use API for adding new integrations while maintaining flexibility is also needed.
-
-
-SUPPORTED LANGUAGES           *my-template-docs-quicktest-supported-languages*
-
-Right now only `go` is supported! Feel free to open PR to add other
-integrations.
 
 
 BUILDING YOUR OWN ADAPTER*my-template-docs-quicktest-building-your-own-adapter*
