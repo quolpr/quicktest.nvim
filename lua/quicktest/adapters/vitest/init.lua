@@ -1,6 +1,7 @@
 local Job = require("plenary.job")
-local ts = require("quicktest.adapters.vitest.ts")
-local fs = require("quicktest.adapters.vitest.fs")
+local q = require("quicktest.adapters.vitest.query")
+local ts = require("quicktest.ts")
+local fs = require("quicktest.fs_utils")
 
 local M = {
   name = "vitest",
@@ -53,9 +54,9 @@ local function get_vitest_config(path)
   }
 
   for _, configName in ipairs(possibleVitestConfigNames) do
-    local configPath = fs.path_join(rootPath, configName)
+    local configPath = fs.path.join(rootPath, configName)
 
-    if fs.exists(configPath) then
+    if fs.path.exists(configPath) then
       return configPath
     end
   end
@@ -66,9 +67,9 @@ end
 ---@param cwd string
 local function find_bin(cwd)
   while cwd and #cwd > 1 do
-    local bin = fs.path_join(cwd, "node_modules", ".bin", "vitest")
+    local bin = fs.path.join(cwd, "node_modules", ".bin", "vitest")
 
-    if fs.exists(bin) then
+    if fs.path.exists(bin) then
       return bin
     end
 
@@ -78,13 +79,20 @@ local function find_bin(cwd)
   return nil
 end
 
+local function find_cwd(bufnr)
+  local buffer_name = vim.api.nvim_buf_get_name(bufnr) -- Get the current buffer's file path
+  local path = vim.fn.fnamemodify(buffer_name, ":p:h") -- Get the full path of the directory containing the file
+
+  return fs.find_ancestor_of_file(path, "package.json")
+end
+
 --- Builds parameters for running tests based on buffer number and cursor position.
 --- This function should be customized to extract necessary information from the buffer.
 ---@param bufnr integer
 ---@param cursor_pos integer[]
 ---@return VitestRunParams | nil, string | nil
 M.build_line_run_params = function(bufnr, cursor_pos)
-  local cwd = fs.find_cwd(bufnr, "package.json")
+  local cwd = find_cwd(bufnr)
 
   if not cwd then
     return nil, "Failed to find cwd"
@@ -97,8 +105,8 @@ M.build_line_run_params = function(bufnr, cursor_pos)
   end
 
   local params = {
-    ns_name = ts.get_current_test_name(bufnr, cursor_pos, "namespace"),
-    test_name = ts.get_current_test_name(bufnr, cursor_pos, "test"),
+    ns_name = ts.get_current_test_name(q, bufnr, cursor_pos, "namespace"),
+    test_name = ts.get_current_test_name(q, bufnr, cursor_pos, "test"),
     cwd = cwd,
     bin = bin,
     config_path = get_vitest_config(cwd) or "vitest.config.js",
@@ -112,7 +120,7 @@ end
 ---@return VitestRunParams | nil, string | nil
 ---@diagnostic disable-next-line: unused-local
 M.build_file_run_params = function(bufnr, cursor_pos)
-  local cwd = fs.find_cwd(bufnr, "package.json")
+  local cwd = find_cwd(bufnr)
 
   if not cwd then
     return nil, "Failed to find cwd"
@@ -138,7 +146,7 @@ end
 local function build_args(params)
   local args = {}
 
-  if fs.exists(params.config_path) then
+  if fs.path.exists(params.config_path) then
     -- only use config if available
     table.insert(args, "--config=" .. params.config_path)
   end
@@ -201,12 +209,12 @@ end
 --   return "Running test: " .. table.concat({ unpack(args, 2) }, " ")
 -- end
 
---- Handles actions to take after the test run, based on the results.
----@param params any
----@param results any
-M.after_run = function(params, results)
-  -- Implement actions based on the results, such as updating UI or handling errors
-end
+-- --- Handles actions to take after the test run, based on the results.
+-- ---@param params any
+-- ---@param results any
+-- M.after_run = function(params, results)
+--   -- Implement actions based on the results, such as updating UI or handling errors
+-- end
 
 --- Checks if the plugin is enabled for the given buffer.
 ---@param bufnr integer
