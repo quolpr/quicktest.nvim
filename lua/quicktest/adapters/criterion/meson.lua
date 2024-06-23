@@ -1,5 +1,4 @@
 local Job = require("plenary.job")
-local json5 = require("json5")
 
 local M = {}
 
@@ -28,7 +27,7 @@ function M.get_targets(builddir)
   })
   job:start()
   Job.join(job)
-  return json5.parse(output)
+  return vim.json.decode(output)
 end
 
 ---@class CompileResult

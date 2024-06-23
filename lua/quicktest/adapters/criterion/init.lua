@@ -1,5 +1,4 @@
 local Job = require("plenary.job")
-local json5 = require("json5")
 
 local util = require("quicktest.adapters.criterion.util")
 local meson = require("quicktest.adapters.criterion.meson")
@@ -100,7 +99,7 @@ M.run = function(params, send)
       send({ type = "stderr", output = data })
     end,
     on_exit = function(_, return_val)
-      M.test_results = json5.parse(test_output)
+      M.test_results = vim.json.decode(test_output)
       util.print_results(M.test_results, send)
       send({ type = "exit", code = return_val })
     end,
