@@ -40,6 +40,24 @@ function M.print_results(result_json, send)
   end
 end
 
+---Get all error messages
+---@param result_json table
+---@return table
+function M.get_error_messages(result_json)
+  local errors = {}
+
+  for _, ts in ipairs(result_json["test_suites"]) do
+    for _, test in ipairs(ts["tests"]) do
+      if test["status"] == "FAILED" and test["messages"] then
+        for _, msg in ipairs(test["messages"]) do
+          table.insert(errors, msg)
+        end
+      end
+    end
+  end
+  return errors
+end
+
 ---Get the filename of a C source file by removing the path
 ---@param path string path/to/file.c
 ---@return string
@@ -71,17 +89,6 @@ function M.get_test_exe_from_buffer(bufnr, builddir)
     end
   end
   return nil
-end
-
----Locate the line number with the error from the given error message
----Example: /some/path/to/test_module.c:42:
----@param msg string
----@return integer | nil
-function M.locate_error(msg)
-  local s = M.splitstr(msg, ":")
-  if s[2] then
-    return tonumber(s[2])
-  end
 end
 
 return M

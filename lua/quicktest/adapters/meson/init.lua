@@ -114,25 +114,17 @@ end
 ---@param results any
 M.after_run = function(params, results)
   local diagnostics = {}
-
-  for _, ts in ipairs(M.test_results["test_suites"]) do
-    for _, test in ipairs(ts["tests"]) do
-      if test["status"] == "FAILED" and test["messages"] then
-        for _, msg in ipairs(test["messages"]) do
-          local line_no = util.locate_error(msg)
-
-          if line_no then
-            table.insert(diagnostics, {
-              lnum = line_no - 1, -- lnum seems to be 0-based
-              col = 0,
-              severity = vim.diagnostic.severity.ERROR,
-              message = "FAILED",
-              source = "Test",
-              user_data = "test",
-            })
-          end
-        end
-      end
+  for _, error in ipairs(util.get_error_messages(M.test_results)) do
+    local line_no = criterion.locate_error(error)
+    if line_no then
+      table.insert(diagnostics, {
+        lnum = line_no - 1, -- lnum seems to be 0-based
+        col = 0,
+        severity = vim.diagnostic.severity.ERROR,
+        message = "FAILED",
+        source = "Test",
+        user_data = "test",
+      })
     end
   end
 
