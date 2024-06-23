@@ -42,4 +42,34 @@ function M.get_nearest_test(bufnr, cursor_pos)
   end
 end
 
+---Make the arguments to pass to the test executable
+---@param test_suite string | nil
+---@param test_name string | nil
+---@return table
+function M.make_test_args(test_suite, test_name)
+  local test_args = {}
+
+  ---We pass --filter=test_suite/test_name to run the named test under the named suite (or all if not specified)
+  local ts = test_suite or "*"
+  local tn = test_name or "*"
+  local test_to_run = "--filter=" .. ts .. "/" .. tn
+  table.insert(test_args, test_to_run)
+
+  ---We pass --json to enable test results as a JSON document
+  table.insert(test_args, "--json")
+
+  return test_args
+end
+
+---Locate the line number with the error from the given error message
+---Example: /some/path/to/test_module.c:42:
+---@param msg string
+---@return integer | nil
+function M.locate_error(msg)
+  local s = util.splitstr(msg, ":")
+  if s[2] then
+    return tonumber(s[2])
+  end
+end
+
 return M

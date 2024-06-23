@@ -1,7 +1,8 @@
 local Job = require("plenary.job")
+local json5 = require("json5")
 local util = require("quicktest.adapters.meson.util")
 local meson = require("quicktest.adapters.meson.meson")
-local test_parser = require("quicktest.adapters.meson.test_parser")
+local criterion = require("quicktest.adapters.meson.criterion")
 
 local ns = vim.api.nvim_create_namespace("quicktest-meson")
 
@@ -15,7 +16,7 @@ local M = {
 ---@field test_suite string
 ---@field test_name string
 
----@class MesonTestParams
+---@class CriterionTestParams
 ---@field test Test
 ---@field test_exe string
 ---@field bufnr integer
@@ -23,7 +24,7 @@ local M = {
 
 ---@param bufnr integer
 ---@param cursor_pos integer[]
----@return MesonTestParams
+---@return CriterionTestParams
 M.build_file_run_params = function(bufnr, cursor_pos)
   local test_exe = util.get_test_exe_from_buffer(bufnr, M.builddir)
 
@@ -41,16 +42,16 @@ end
 
 ---@param bufnr integer
 ---@param cursor_pos integer[]
----@return MesonTestParams
+---@return CriterionTestParams
 M.build_line_run_params = function(bufnr, cursor_pos)
-  local line = test_parser.get_nearest_test(bufnr, cursor_pos)
   local test_exe = util.get_test_exe_from_buffer(bufnr, M.builddir)
+  local line = criterion.get_nearest_test(bufnr, cursor_pos)
 
   if line == nil or test_exe == nil then
     return {}
   end
 
-  local test = test_parser.get_test_suite_and_name(line)
+  local test = criterion.get_test_suite_and_name(line)
   return {
     test = test,
     test_exe = test_exe,
@@ -61,14 +62,14 @@ end
 
 --- Determines if the test can be run with the given parameters.
 --- Attempt to run if params is not an empty table
----@param params MesonTestParams
+---@param params CriterionTestParams
 ---@return boolean
 M.can_run = function(params)
   return next(params) ~= nil
 end
 
 --- Executes the test with the given parameters.
----@param params MesonTestParams
+---@param params CriterionTestParams
 ---@param send fun(data: any)
 ---@return integer
 M.run = function(params, send)
@@ -85,23 +86,21 @@ M.run = function(params, send)
     return -1
   end
 
-  local raw_json = {}
+  local test_output = ""
 
   --- Run the tests
   local job = Job:new({
-    command = "meson",
-    args = util.make_test_args(params.test_exe, params.test.test_suite, params.test.test_name),
+    command = params.test_exe,
+    args = criterion.make_test_args(params.test.test_suite, params.test.test_name),
     on_stdout = function(_, data)
-      local temp = util.capture_json(data, raw_json)
-      if temp then
-        M.test_results = temp
-        util.print_results(M.test_results, send)
-      end
+      test_output = test_output .. data
     end,
     on_stderr = function(_, data)
       send({ type = "stderr", output = data })
     end,
     on_exit = function(_, return_val)
+      M.test_results = json5.parse(test_output)
+      util.print_results(M.test_results, send)
       send({ type = "exit", code = return_val })
     end,
   })
@@ -111,7 +110,7 @@ M.run = function(params, send)
 end
 
 --- Handles actions to take after the test run, based on the results.
----@param params MesonTestParams
+---@param params CriterionTestParams
 ---@param results any
 M.after_run = function(params, results)
   local diagnostics = {}
@@ -149,7 +148,7 @@ M.is_enabled = function(bufnr)
   return vim.startswith(filename, "test_") and vim.endswith(filename, ".c")
 end
 
----@param params MesonTestParams
+---@param params CriterionTestParams
 ---@return string
 M.title = function(params)
   if params.test.test_suite ~= nil and params.test.test_name ~= nil then

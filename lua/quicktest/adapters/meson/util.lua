@@ -1,4 +1,3 @@
-local json5 = require("json5")
 local meson = require("quicktest.adapters.meson.meson")
 
 local M = {}
@@ -17,37 +16,6 @@ function M.splitstr(inputstr, sep)
     table.insert(t, str)
   end
   return t
-end
-
----@class JsonContext
----@field open boolean State indicating opening bracket has been found and data should be added to the text field
----@field text string All JSON text
-
----This function is fed all output from running the test executable and tries to capture a JSON-document in the stream.
----It searches for the opening and closing brackets both of which are assumed to be on new lines.
----This function assumes the pretty-printed JSON data as output from the criterion test exectuable when passed the '--json' argument
----Return true if JSON was successfully captured.
----@param data string
----@param json JsonContext
----@return table | nil
-function M.capture_json(data, json)
-  local result = nil
-
-  if vim.startswith(data, "{") then
-    json.open = true
-    json.text = ""
-  end
-
-  if json.open then
-    json.text = json.text .. data .. "\n"
-  end
-
-  if vim.startswith(data, "}") then
-    json.open = false
-    result = json5.parse(json.text)
-  end
-
-  return result
 end
 
 ---Prints the test results using the callback provided by the plugin
@@ -97,36 +65,12 @@ function M.get_test_exe_from_buffer(bufnr, builddir)
       for _, source in ipairs(target_source["sources"]) do
         -- print(vim.inspect(source))
         if source == bufname then
-          return target["name"]
+          return target["filename"][1]
         end
       end
     end
   end
   return nil
-end
-
----Make the arguments to pass to 'meson test'
----This function assumes the test executable is built with Criterion
----@param test_exe string Name of test executable
----@param test_suite string | nil
----@param test_name string | nil
----@return table
-function M.make_test_args(test_exe, test_suite, test_name)
-  local test_args = { "test", "-C", "build" }
-
-  table.insert(test_args, test_exe)
-
-  ---Enable verbose mode so test_exe output is written to console
-  table.insert(test_args, "-v")
-
-  ---Pass arguments to the test executable
-  ---We pass --json to enable test results as a JSON document
-  ---We pass --filter=test_suite/test_name to run the named test under the named suite (or all if not specified)
-  local ts = test_suite or "*"
-  local tn = test_name or "*"
-  local ta = "--filter=" .. ts .. "/" .. tn .. " --json"
-  table.insert(test_args, "--test-args=" .. ta)
-  return test_args
 end
 
 ---Locate the line number with the error from the given error message
