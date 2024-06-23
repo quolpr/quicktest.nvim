@@ -1,4 +1,4 @@
-local meson = require("quicktest.adapters.meson.meson")
+local meson = require("quicktest.adapters.criterion.meson")
 
 local M = {}
 

@@ -1,13 +1,14 @@
 local Job = require("plenary.job")
 local json5 = require("json5")
-local util = require("quicktest.adapters.meson.util")
-local meson = require("quicktest.adapters.meson.meson")
-local criterion = require("quicktest.adapters.meson.criterion")
 
-local ns = vim.api.nvim_create_namespace("quicktest-meson")
+local util = require("quicktest.adapters.criterion.util")
+local meson = require("quicktest.adapters.criterion.meson")
+local criterion = require("quicktest.adapters.criterion.criterion")
+
+local ns = vim.api.nvim_create_namespace("quicktest-criterion")
 
 local M = {
-  name = "meson test runner for C assuming Criterion test frame work",
+  name = "criterion",
   test_results = {},
   builddir = "build",
 }
