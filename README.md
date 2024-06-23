@@ -20,6 +20,7 @@ qt.setup({
     }),
     require("quicktest.adapters.vitest"),
     require("quicktest.adapters.elixir"),
+    require("quicktest.adapters.criterion"),
   }
 })
 
@@ -58,7 +59,7 @@ qt.run_previous()
 
 ## Installation
 
-Supported languages: Go, Typescript/Javascript(vitest)<br>
+Supported languages: Go, Typescript/Javascript(vitest), C (criterion with meson)<br>
 Feel free to open PR for your language, the plugin API is pretty simple and described in `Building your own plugin` section in this Readme.
 
 Simple configurations:
@@ -72,6 +73,7 @@ qt.setup({
     require("quicktest.adapters.golang"),
     require("quicktest.adapters.vitest"),
     require("quicktest.adapters.elixir"),
+    require("quicktest.adapters.criterion"),
   }
 })
 
@@ -120,6 +122,7 @@ Using Lazy:
         }),
         require("quicktest.adapters.vitest"),
         require("quicktest.adapters.elixir"),
+        require("quicktest.adapters.criterion"),
       }
     })
   end,
