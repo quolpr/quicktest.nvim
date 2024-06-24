@@ -73,6 +73,11 @@ end
 ---@param send fun(data: any)
 ---@return integer
 M.run = function(params, send)
+  if not M.can_run(params) then
+    send({ type = "exit", code = 1 })
+    return -1
+  end
+
   -- It is not necessary to compile before running the tests as meson does this automatically.
   -- However, we explicitly call meson compile here to capture the build output so that
   -- we can show potential build errors in the UI.
@@ -113,6 +118,10 @@ end
 ---@param params CriterionTestParams
 ---@param results any
 M.after_run = function(params, results)
+  if not M.can_run(params) then
+    return
+  end
+
   local diagnostics = {}
   for _, error in ipairs(util.get_error_messages(M.test_results)) do
     local line_no = criterion.locate_error(error)
@@ -143,6 +152,10 @@ end
 ---@param params CriterionTestParams
 ---@return string
 M.title = function(params)
+  if not M.can_run(params) then
+    return "No test(s) to run"
+  end
+
   if params.test.test_suite ~= nil and params.test.test_name ~= nil then
     return "Testing " .. params.test.test_suite .. "/" .. params.test.test_name
   else
