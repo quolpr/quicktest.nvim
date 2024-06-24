@@ -32,7 +32,7 @@ end
 ---for next possible match.
 ---@param bufnr integer
 ---@param cursor_pos integer[]
----@return string | nil
+---@return string
 function M.get_nearest_test(bufnr, cursor_pos)
   for pos = cursor_pos[1], 1, -1 do
     local line = vim.api.nvim_buf_get_lines(bufnr, pos - 1, pos, true)[1]
@@ -40,6 +40,7 @@ function M.get_nearest_test(bufnr, cursor_pos)
       return line
     end
   end
+  return ""
 end
 
 ---Make the arguments to pass to the test executable

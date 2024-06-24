@@ -72,7 +72,7 @@ end
 ---so that is a known limitation and is currently not handled.
 ---@param bufnr integer
 ---@param builddir string
----@return string | nil
+---@return string
 function M.get_test_exe_from_buffer(bufnr, builddir)
   local bufname = vim.api.nvim_buf_get_name(bufnr)
   local targets = meson.get_targets(builddir)
@@ -88,7 +88,7 @@ function M.get_test_exe_from_buffer(bufnr, builddir)
       end
     end
   end
-  return nil
+  return ""
 end
 
 return M

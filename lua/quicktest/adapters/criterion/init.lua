@@ -28,7 +28,7 @@ local M = {
 M.build_file_run_params = function(bufnr, cursor_pos)
   local test_exe = util.get_test_exe_from_buffer(bufnr, M.builddir)
 
-  if test_exe == nil then
+  if test_exe == "" then
     return {}
   end
 
@@ -47,7 +47,7 @@ M.build_line_run_params = function(bufnr, cursor_pos)
   local test_exe = util.get_test_exe_from_buffer(bufnr, M.builddir)
   local line = criterion.get_nearest_test(bufnr, cursor_pos)
 
-  if line == nil or test_exe == nil then
+  if line == "" or test_exe == "" then
     return {}
   end
 
