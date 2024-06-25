@@ -116,6 +116,30 @@ M.build_line_run_params = function(bufnr, cursor_pos)
 end
 
 ---@param bufnr integer
+---@return VitestRunParams | nil, string | nil
+M.build_all_run_params = function(bufnr)
+  local cwd = find_cwd(bufnr)
+
+  if not cwd then
+    return nil, "Failed to find cwd"
+  end
+
+  local bin = find_bin(cwd)
+
+  if not bin then
+    return nil, "Failed to find vitest binary"
+  end
+
+  local params = {
+    cwd = cwd,
+    bin = bin,
+    config_path = get_vitest_config(cwd) or "vitest.config.js",
+    -- Add other parameters as need ЖСd
+  }
+  return params, nil
+end
+
+---@param bufnr integer
 ---@param cursor_pos integer[]
 ---@return VitestRunParams | nil, string | nil
 ---@diagnostic disable-next-line: unused-local
@@ -218,26 +242,34 @@ end
 
 --- Checks if the plugin is enabled for the given buffer.
 ---@param bufnr integer
+---@param type RunType
 ---@return boolean
-M.is_enabled = function(bufnr)
+M.is_enabled = function(bufnr, type)
   local file_path = vim.api.nvim_buf_get_name(bufnr)
 
-  local is_test_file = false
+  if type == "line" or type == "file" then
+    local is_test_file = false
 
-  if string.match(file_path, "__tests__") then
-    is_test_file = true
-  end
+    if string.match(file_path, "__tests__") then
+      is_test_file = true
+    end
 
-  for _, x in ipairs({ "spec", "test" }) do
-    for _, ext in ipairs({ "js", "jsx", "coffee", "ts", "tsx" }) do
-      if string.match(file_path, "%." .. x .. "%." .. ext .. "$") then
-        is_test_file = true
-        goto matched_pattern
+    for _, x in ipairs({ "spec", "test" }) do
+      for _, ext in ipairs({ "js", "jsx", "coffee", "ts", "tsx" }) do
+        if string.match(file_path, "%." .. x .. "%." .. ext .. "$") then
+          is_test_file = true
+          goto matched_pattern
+        end
       end
     end
+    ::matched_pattern::
+    return is_test_file
+  else
+    return vim.endswith(file_path, ".ts")
+      or vim.endswith(file_path, ".js")
+      or vim.endswith(file_path, ".tsx")
+      or vim.endswith(file_path, ".jsx")
   end
-  ::matched_pattern::
-  return is_test_file
 end
 
 return M

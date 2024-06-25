@@ -122,19 +122,24 @@ M.run = function(params, send)
 end
 
 ---@param bufnr integer
+---@param type RunType
 ---@return boolean
-M.is_enabled = function(bufnr)
+M.is_enabled = function(bufnr, type)
   local file_path = vim.api.nvim_buf_get_name(bufnr)
 
-  return vim.endswith(file_path, "test.exs")
+  if type == "line" or type == "file" then
+    return vim.endswith(file_path, "test.exs")
+  else
+    return vim.endswith(file_path, ".ex") or vim.endswith(file_path, ".exs")
+  end
 end
 
 M.title = function(params)
-  if params.mode == "file" then
+  if params.mode == "file" or (params.mode == "line" and params.pos == nil) then
     return "Running test: " .. fs.extract_filename(params.cwd, params.file)
   elseif params.mode == "all" then
     return "Running all tests"
-  elseif params.mode == "line" then
+  elseif params.pos then
     return "Running test: " .. fs.extract_filename(params.cwd, params.file) .. ":" .. params.pos
   end
 

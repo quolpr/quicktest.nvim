@@ -11,6 +11,8 @@ local M = {}
 
 ---@alias CmdData {type: 'stdout', raw: string, output: string?, decoded: any} | {type: 'stderr', raw: string, output: string?, decoded: any} | {type: 'exit', code: number}
 
+---@alias RunType 'line' | 'file' | 'dir' | 'all'
+
 ---@class QuicktestAdapter
 ---@field name string
 ---@field build_line_run_params fun(bufnr: integer, cursor_pos: integer[]): any
@@ -19,7 +21,7 @@ local M = {}
 ---@field run fun(params: GoRunParams, send: fun(data: CmdData)): number
 ---@field after_run fun(params: GoRunParams, results: CmdData)?
 ---@field title fun(params: GoRunParams): string
----@field is_enabled fun(bufnr): boolean
+---@field is_enabled fun(bufnr: number, type: RunType): boolean
 
 ---@class QuicktestConfig
 ---@field adapters QuicktestAdapter[]
@@ -29,14 +31,16 @@ local current_job = nil
 local previous_run = nil
 
 --- @param config QuicktestConfig
-local function get_adapter(config)
+--- @param type RunType
+--- @return QuicktestAdapter
+local function get_adapter(config, type)
   local current_buffer = api.nvim_get_current_buf()
 
   --- @type QuicktestAdapter
   local adapter
 
   for _, plug in ipairs(config.adapters) do
-    if plug.is_enabled(current_buffer) then
+    if plug.is_enabled(current_buffer, type) then
       adapter = plug
       break
     end
@@ -208,7 +212,7 @@ function M.prepare_and_run(config, type, mode)
   local cursor_pos = vim.api.nvim_win_get_cursor(win) -- Get the cursor position in the window
 
   --- @type QuicktestAdapter
-  local adapter = get_adapter(config)
+  local adapter = get_adapter(config, type)
 
   if not adapter then
     return notify.warn("Failed to test: no suitable adapter found.")

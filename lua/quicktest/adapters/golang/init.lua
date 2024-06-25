@@ -231,10 +231,15 @@ M.after_run = function(params, results)
 end
 
 ---@param bufnr integer
+---@param type RunType
 ---@return boolean
-M.is_enabled = function(bufnr)
+M.is_enabled = function(bufnr, type)
   local bufname = vim.api.nvim_buf_get_name(bufnr)
-  return vim.endswith(bufname, "_test.go")
+  if type == "line" or type == "file" then
+    return vim.endswith(bufname, "_test.go")
+  else
+    return vim.endswith(bufname, ".go")
+  end
 end
 
 --- Adapter options.
