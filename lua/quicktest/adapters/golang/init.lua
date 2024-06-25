@@ -3,8 +3,15 @@ local cmd = require("quicktest.adapters.golang.cmd")
 local fs = require("quicktest.fs_utils")
 local Job = require("plenary.job")
 
+---@class GoAdapterOptions
+---@field cwd (fun(bufnr: integer): string)?
+---@field bin (fun(bufnr: integer): string)?
+---@field additional_args (fun(bufnr: integer): string[])?
+
 local M = {
   name = "go",
+  ---@type GoAdapterOptions
+  options = {},
 }
 
 local ns = vim.api.nvim_create_namespace("quicktest-go")
@@ -58,7 +65,7 @@ end
 ---@return GoRunParams | nil, string | nil
 M.build_file_run_params = function(bufnr, cursor_pos)
   local func_names = ts.get_func_names(bufnr)
-  local cwd = find_cwd(bufnr) or vim.fn.getcwd()
+  local cwd = M.options.cwd and M.options.cwd(bufnr) or find_cwd(bufnr) or vim.fn.getcwd()
   local module = get_module_path(cwd, bufnr) or "."
 
   if not func_names or #func_names == 0 then
@@ -87,7 +94,7 @@ M.build_line_run_params = function(bufnr, cursor_pos)
   if sub_name then
     sub_func_names = { sub_name }
   end
-  local cwd = find_cwd(bufnr) or vim.fn.getcwd()
+  local cwd = M.options.cwd and M.options.cwd(bufnr) or find_cwd(bufnr) or vim.fn.getcwd()
   local module = get_module_path(cwd, bufnr) or "."
 
   if not func_names or #func_names == 0 then
@@ -109,7 +116,7 @@ end
 ---@param cursor_pos integer[]
 ---@return GoRunParams | nil, string | nil
 M.build_all_run_params = function(bufnr, cursor_pos)
-  local cwd = find_cwd(bufnr) or vim.fn.getcwd()
+  local cwd = M.options.cwd and M.options.cwd(bufnr) or find_cwd(bufnr) or vim.fn.getcwd()
   local module = "./..."
 
   return {
@@ -127,7 +134,7 @@ end
 ---@param cursor_pos integer[]
 ---@return GoRunParams | nil, string | nil
 M.build_dir_run_params = function(bufnr, cursor_pos)
-  local cwd = find_cwd(bufnr) or vim.fn.getcwd()
+  local cwd = M.options.cwd and M.options.cwd(bufnr) or find_cwd(bufnr) or vim.fn.getcwd()
   local module = get_module_path(cwd, bufnr) or "."
 
   return {
@@ -145,9 +152,16 @@ end
 ---@param send fun(data: CmdData)
 ---@return integer
 M.run = function(params, send)
+  local args = cmd.build_args(
+    params.module,
+    params.func_names,
+    params.sub_func_names,
+    M.options.additional_args and M.options.additional_args(params.bufnr) or {}
+  )
+
   local job = Job:new({
-    command = "go",
-    args = cmd.build_args(params.module, params.func_names, params.sub_func_names),
+    command = M.options.bin and M.options.bin(params.bufnr) or "go",
+    args = args,
     cwd = params.cwd,
     on_stdout = function(_, data)
       --- @type GoLogEntry
@@ -176,7 +190,12 @@ M.run = function(params, send)
 end
 
 M.title = function(params)
-  local args = cmd.build_args(params.module, params.func_names, params.sub_func_names)
+  local args = cmd.build_args(
+    params.module,
+    params.func_names,
+    params.sub_func_names,
+    M.options.additional_args and M.options.additional_args(params.bufnr) or {}
+  )
 
   return "Running test: " .. table.concat({ unpack(args, 2) }, " ")
 end
@@ -217,5 +236,15 @@ M.is_enabled = function(bufnr)
   local bufname = vim.api.nvim_buf_get_name(bufnr)
   return vim.endswith(bufname, "_test.go")
 end
+
+--- Adapter options.
+setmetatable(M, {
+  ---@param opts GoAdapterOptions
+  __call = function(_, opts)
+    M.options = opts
+
+    return M
+  end,
+})
 
 return M

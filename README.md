@@ -13,7 +13,11 @@ local qt = require 'quicktest'
 -- Choose your adapter, here all supported adapters are listed
 qt.setup({
   adapters = {
-    require("quicktest.adapters.golang"),
+    require("quicktest.adapters.golang")({
+      additional_args = function(bufnr) return { '-race', '-count=1' } end
+      -- bin = function(bufnr) return 'go' end
+      -- cwd = function(bufnr) return 'your-cwd' end
+    }),
     require("quicktest.adapters.vitest"),
     require("quicktest.adapters.elixir"),
   }
@@ -109,7 +113,11 @@ Using Lazy:
     qt.setup({
       -- Choose your adapter, here all supported adapters are listed
       adapters = {
-        require("quicktest.adapters.golang"),
+        require("quicktest.adapters.golang")({
+          additional_args = function(bufnr) return { '-race', '-count=1' } end
+          -- bin = function(bufnr) return 'go' end
+          -- cwd = function(bufnr) return 'your-cwd' end
+        }),
         require("quicktest.adapters.vitest"),
         require("quicktest.adapters.elixir"),
       }
