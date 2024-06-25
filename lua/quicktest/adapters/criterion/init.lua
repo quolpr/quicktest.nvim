@@ -70,9 +70,7 @@ end
 ---@param send fun(data: any)
 ---@return integer
 M.run = function(params, send)
-  -- It is not necessary to compile before running the tests as meson does this automatically.
-  -- However, we explicitly call meson compile here to capture the build output so that
-  -- we can show potential build errors in the UI.
+  -- Build the project so we can show potential build errors in the UI.
   -- Otherwise the test will fail silently-ish providing little insight to the user.
   local compile = meson.compile(M.builddir)
   if compile.return_val ~= 0 then
