@@ -9,6 +9,8 @@ local M = {}
 ---@return table
 function M.get_targets(builddir)
   local output = ""
+  local retval = -1
+
   local job = Job:new({
 
     command = "meson",
@@ -20,13 +22,19 @@ function M.get_targets(builddir)
       print(data)
     end,
     on_exit = function(_, return_val)
+      retval = return_val
       if return_val ~= 0 then
-        print("meson introspect returned: " .. tostring(return_val))
+        print("Error: " .. output)
       end
     end,
   })
   job:start()
   Job.join(job)
+
+  if retval ~= 0 then
+    return {}
+  end
+
   return vim.json.decode(output)
 end
 
