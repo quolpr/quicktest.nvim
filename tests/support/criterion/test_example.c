@@ -30,3 +30,15 @@ Test(ts_example, test_sum_basic, .description = "Simple test")
     cr_assert(eq(int, 1 + 2, 3));
 }
 
+Test(ts_example, test_without_description)
+{
+    cr_assert(true);
+}
+
+Test(ts_example,
+     test_name,
+     .description = "Test Run (by line) does not work on this one because the adapter expects the test definition to be on one line")
+{
+    cr_assert(true);
+}
+

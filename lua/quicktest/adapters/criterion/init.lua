@@ -64,6 +64,10 @@ M.build_line_run_params = function(bufnr, cursor_pos)
   end
 
   local test = criterion.get_test_suite_and_name(line)
+  if test == nil then
+    return nil, "Failed to parse test suite and name"
+  end
+
   return {
     test = test,
     test_exe = test_exe,

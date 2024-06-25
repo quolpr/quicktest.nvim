@@ -9,9 +9,18 @@ local M = {}
 --- Test(test_suite, test_name, ...)
 ---Returns the test suite and name in a table
 ---@param line string
----@return table
+---@return table | nil
 function M.get_test_suite_and_name(line)
-  local parts = util.splitstr(line, "(")
+  local parts = util.splitstr(line, ")")
+  if parts[1] == nil then
+    return nil
+  end
+
+  parts = util.splitstr(parts[1], "(")
+  if parts[1] == nil then
+    return nil
+  end
+
   local index = 1
 
   if vim.startswith(parts[1], "ParameterizedTest") then
@@ -19,6 +28,9 @@ function M.get_test_suite_and_name(line)
   end
 
   parts = util.splitstr(parts[2], ",")
+  if not parts[index] or not parts[index + 1] then
+    return nil
+  end
   return {
     test_suite = string.gsub(parts[index], "%s+", ""), -- Trim whitespace
     test_name = string.gsub(parts[index + 1], "%s+", ""),
