@@ -154,11 +154,16 @@ end
 ---@param params CriterionTestParams
 ---@return string
 M.title = function(params)
-  if params.test.test_suite ~= nil and params.test.test_name ~= nil then
-    return "Testing " .. params.test.test_suite .. "/" .. params.test.test_name
-  else
-    return "Running tests from " .. params.test_exe
-  end
+  local args = table.concat(
+    criterion.make_test_args(
+      params.test.test_suite,
+      params.test.test_name,
+      M.options.additional_args and M.options.additional_args(params.bufnr) or {}
+    ),
+    " "
+  )
+
+  return "Running " .. params.test_exe .. " " .. args
 end
 
 --- Adapter options
