@@ -20,7 +20,10 @@ qt.setup({
     }),
     require("quicktest.adapters.vitest"),
     require("quicktest.adapters.elixir"),
-    require("quicktest.adapters.criterion"),
+    require("quicktest.adapters.criterion")({
+      builddir = function(bufnr) return "build" end,
+      additional_args = function(bufnr) return {'arg1', 'arg2'} end,
+    }),
   }
 })
 
