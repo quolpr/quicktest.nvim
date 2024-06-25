@@ -3,8 +3,9 @@ local M = {}
 --- @params module string
 --- @params func_names string[]
 --- @params sub_func_names string[]
+--- @params additional_args string[]
 --- @return string[]
-function M.build_args(module, func_names, sub_func_names)
+function M.build_args(module, func_names, sub_func_names, additional_args)
   local args = {
     "test",
   }
@@ -36,8 +37,10 @@ function M.build_args(module, func_names, sub_func_names)
   end
   table.insert(args, "-v")
   table.insert(args, "-json")
-  table.insert(args, "-race")
-  table.insert(args, "-count=1")
+
+  print(vim.inspect(additional_args))
+  print(vim.inspect(args))
+  args = vim.list_extend(args, additional_args)
 
   return args
 end

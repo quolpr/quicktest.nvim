@@ -2,10 +2,7 @@
 local module = require("quicktest.module")
 
 local config = {
-  adapters = {
-    require("quicktest.adapters.golang"),
-    require("quicktest.adapters.elixir"),
-  },
+  adapters = {},
 }
 
 ---@class MyModule
