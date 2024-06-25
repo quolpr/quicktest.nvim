@@ -1,9 +1,9 @@
 local M = {}
 
---- @params module string
---- @params func_names string[]
---- @params sub_func_names string[]
---- @params additional_args string[]
+--- @param module string
+--- @param func_names string[]
+--- @param sub_func_names string[]
+--- @param additional_args string[]
 --- @return string[]
 function M.build_args(module, func_names, sub_func_names, additional_args)
   local args = {
@@ -38,8 +38,6 @@ function M.build_args(module, func_names, sub_func_names, additional_args)
   table.insert(args, "-v")
   table.insert(args, "-json")
 
-  print(vim.inspect(additional_args))
-  print(vim.inspect(args))
   args = vim.list_extend(args, additional_args)
 
   return args
