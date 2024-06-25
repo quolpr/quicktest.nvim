@@ -8,6 +8,8 @@ local ns = vim.api.nvim_create_namespace("quicktest-criterion")
 
 ---@class CriterionAdapterOptions
 ---@field builddir (fun(buf: integer): string)?
+---@field additional_args (fun(buf: integer): string[])?
+
 local M = {
   name = "criterion",
   test_results = {},
@@ -94,7 +96,13 @@ M.run = function(params, send)
   --- Run the tests
   local job = Job:new({
     command = params.test_exe,
-    args = criterion.make_test_args(params.test.test_suite, params.test.test_name),
+
+    args = criterion.make_test_args(
+      params.test.test_suite,
+      params.test.test_name,
+      M.options.additional_args and M.options.additional_args(params.bufnr) or {}
+    ),
+
     on_stdout = function(_, data)
       test_output = test_output .. data
     end,

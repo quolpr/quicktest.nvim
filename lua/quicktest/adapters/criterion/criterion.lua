@@ -46,8 +46,9 @@ end
 ---Make the arguments to pass to the test executable
 ---@param test_suite string | nil
 ---@param test_name string | nil
+---@param additional_args string[]
 ---@return table
-function M.make_test_args(test_suite, test_name)
+function M.make_test_args(test_suite, test_name, additional_args)
   local test_args = {}
 
   ---We pass --filter=test_suite/test_name to run the named test under the named suite (or all if not specified)
@@ -59,6 +60,8 @@ function M.make_test_args(test_suite, test_name)
   ---We pass --json to enable test results as a JSON document
   table.insert(test_args, "--json")
 
+  ---Insert user arguments if any
+  test_args = vim.list_extend(test_args, additional_args)
   return test_args
 end
 
