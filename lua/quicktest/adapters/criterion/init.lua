@@ -6,10 +6,13 @@ local criterion = require("quicktest.adapters.criterion.criterion")
 
 local ns = vim.api.nvim_create_namespace("quicktest-criterion")
 
+---@class CriterionAdapterOptions
+---@field builddir (fun(buf: integer): string)?
 local M = {
   name = "criterion",
   test_results = {},
-  builddir = "build",
+  ---@type CriterionAdapterOptions
+  options = {},
 }
 
 ---@class Test
@@ -26,10 +29,11 @@ local M = {
 ---@param cursor_pos integer[]
 ---@return CriterionTestParams | nil,  string | nil
 M.build_file_run_params = function(bufnr, cursor_pos)
-  local test_exe = util.get_test_exe_from_buffer(bufnr, M.builddir)
+  local builddir = M.options.builddir and M.options.builddir(bufnr) or "build"
+  local test_exe = util.get_test_exe_from_buffer(bufnr, builddir)
 
   if test_exe == "" then
-    return nil, "No test executable was found in " .. M.builddir
+    return nil, "No test executable was found in " .. builddir
   end
 
   return {
@@ -50,10 +54,11 @@ M.build_line_run_params = function(bufnr, cursor_pos)
     return nil, "No test to run"
   end
 
-  local test_exe = util.get_test_exe_from_buffer(bufnr, M.builddir)
+  local builddir = M.options.builddir and M.options.builddir(bufnr) or "build"
+  local test_exe = util.get_test_exe_from_buffer(bufnr, builddir)
 
   if test_exe == "" then
-    return nil, "No test executable was found in " .. M.builddir
+    return nil, "No test executable was found in " .. builddir
   end
 
   local test = criterion.get_test_suite_and_name(line)
@@ -72,7 +77,10 @@ end
 M.run = function(params, send)
   -- Build the project so we can show potential build errors in the UI.
   -- Otherwise the test will fail silently-ish providing little insight to the user.
-  local compile = meson.compile(M.builddir)
+
+  local builddir = M.options.builddir and M.options.builddir(params.bufnr) or "build"
+  local compile = meson.compile(builddir)
+
   if compile.return_val ~= 0 then
     for _, line in ipairs(compile.text) do
       send({ type = "stderr", output = line })
@@ -144,5 +152,14 @@ M.title = function(params)
     return "Running tests from " .. params.test_exe
   end
 end
+
+--- Adapter options
+setmetatable(M, {
+  ---@param opts CriterionAdapterOptions
+  __call = function(_, opts)
+    M.options = opts
+    return M
+  end,
+})
 
 return M
