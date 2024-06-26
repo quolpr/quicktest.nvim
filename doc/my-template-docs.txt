@@ -1,4 +1,4 @@
-*my-template-docs.txt*      For Neovim >= 0.8.0      Last change: 2024 June 25
+*my-template-docs.txt*      For Neovim >= 0.8.0      Last change: 2024 June 26
 
 ==============================================================================
 Table of Contents                         *my-template-docs-table-of-contents*
@@ -40,6 +40,10 @@ API                                           *my-template-docs-quicktest-api*
         }),
         require("quicktest.adapters.vitest"),
         require("quicktest.adapters.elixir"),
+        require("quicktest.adapters.criterion")({
+          builddir = function(bufnr) return "build" end,
+          additional_args = function(bufnr) return {'arg1', 'arg2'} end,
+        }),
       }
     })
     
@@ -79,9 +83,9 @@ API                                           *my-template-docs-quicktest-api*
 
 INSTALLATION                         *my-template-docs-quicktest-installation*
 
-Supported languages: Go, Typescript/Javascript(vitest) Feel free to open PR for
-your language, the plugin API is pretty simple and described in `Building your
-own plugin` section in this Readme.
+Supported languages: Go, Typescript/Javascript(vitest), C (criterion with
+meson) Feel free to open PR for your language, the plugin API is pretty simple
+and described in `Building your own plugin` section in this Readme.
 
 Simple configurations:
 
@@ -94,6 +98,7 @@ Simple configurations:
         require("quicktest.adapters.golang"),
         require("quicktest.adapters.vitest"),
         require("quicktest.adapters.elixir"),
+        require("quicktest.adapters.criterion"),
       }
     })
     
@@ -142,6 +147,7 @@ Using Lazy:
             }),
             require("quicktest.adapters.vitest"),
             require("quicktest.adapters.elixir"),
+            require("quicktest.adapters.criterion"),
           }
         })
       end,
