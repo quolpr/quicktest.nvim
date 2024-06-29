@@ -1,11 +1,12 @@
 # Quicktest
+
 Quicktest improves your testing experience in real-time with flexible display options like popups or split windows, customized to your workflow preferences. Key features include identifying the nearest function and triggering its test, rerunning previous tests from any location, and live scrolling of results alongside a running timer for immediate feedback.
 
-Currently supported languages: Go, Typescript/Javascript(vitest), Elixir. There is also a template in Readme below about how to create own adapter. Should be pretty easy!
+Currently supported languages: Go, Typescript/Javascript(vitest), Elixir, Dart. There is also a template in Readme below about how to create own adapter. Should be pretty easy!
 
 ![Example](https://github.com/quolpr/quicktest.nvim/assets/7958527/b3629bc9-2886-468c-a6e2-6b826dc404d0)
 
-## Api 
+## Api
 
 ```lua
 local qt = require 'quicktest'
@@ -24,6 +25,7 @@ qt.setup({
       builddir = function(bufnr) return "build" end,
       additional_args = function(bufnr) return {'arg1', 'arg2'} end,
     }),
+    require("quicktest.adapters.dart"),
   }
 })
 
@@ -62,7 +64,7 @@ qt.run_previous()
 
 ## Installation
 
-Supported languages: Go, Typescript/Javascript(vitest), C (criterion with meson)<br>
+Supported languages: Go, Typescript/Javascript(vitest), C (criterion with meson), Dart<br>
 Feel free to open PR for your language, the plugin API is pretty simple and described in `Building your own plugin` section in this Readme.
 
 Simple configurations:
@@ -77,6 +79,7 @@ qt.setup({
     require("quicktest.adapters.vitest"),
     require("quicktest.adapters.elixir"),
     require("quicktest.adapters.criterion"),
+    require("quicktest.adapters.dart"),
   }
 })
 
@@ -126,6 +129,7 @@ Using Lazy:
         require("quicktest.adapters.vitest"),
         require("quicktest.adapters.elixir"),
         require("quicktest.adapters.criterion"),
+        require("quicktest.adapters.dart"),
       }
     })
   end,
@@ -206,6 +210,7 @@ Using Lazy:
 ```
 
 ## Features
+
 - **Contextual Test Triggering:** Run tests directly from where your cursor is located or execute all tests in the entire file.
 - **Flexible Test Reruns:** Rerun tests from any location, automatically opening a popup or using an existing split view if it's open.
 - **Live-Scrolling Results:** Continuously scroll through test results as they are generated.
@@ -215,8 +220,8 @@ Using Lazy:
 
 If these features resonate with you, Quicktest might be just what you need!
 
-
 ## Motivation
+
 I like using Neotest, but there are several features that I really miss:
 
 1. Ability to reset test results with each run.
