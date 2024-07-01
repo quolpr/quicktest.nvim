@@ -1,4 +1,4 @@
-*my-template-docs.txt*      For Neovim >= 0.8.0      Last change: 2024 June 26
+*my-template-docs.txt*      For Neovim >= 0.8.0      Last change: 2024 July 01
 
 ==============================================================================
 Table of Contents                         *my-template-docs-table-of-contents*
@@ -246,7 +246,7 @@ I like using Neotest, but there are several features that I really miss:
 
 1. Ability to reset test results with each run.
 2. Automatically force open a popup when running test, or keep it in split view if split is opened.
-3. Stability and performance are not as good as desired. Neotest parses the entire codebase to find tests(correct me if I am wrong), which slows down Neovim.
+3. Stability and performance are not as good as desired. Neotest parses the entire codebase to find tests (unless `discovery.enable = false` is configured), which slows down Neovim.
 4. I would appreciate better feedback, such as displaying a timer to show how long the test is running.
 5. I want to see test results as they happen, line by line, not just at the end.
 6. Make output to automatically scroll while the test is running.
