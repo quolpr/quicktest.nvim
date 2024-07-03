@@ -220,7 +220,7 @@ end
 ---@return boolean
 M.is_enabled = function(bufnr)
   local bufname = vim.api.nvim_buf_get_name(bufnr)
-  return vim.endswith(bufname, "_test.dart")
+  return vim.endswith(bufname, "_test.dart") or vim.endswith(bufname, ".dart")
 end
 
 return M
