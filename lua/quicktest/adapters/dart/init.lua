@@ -56,13 +56,20 @@ local M = {
 ---@field bufnr integer
 ---@field cursor_pos integer[]
 ---@field path string
----@field cwd? string
+---@field cwd string
 
 ---@param bufnr integer
 ---@param cursor_pos integer[]
 ---@return DartRunParams | nil, nil | string
 M.build_line_run_params = function(bufnr, cursor_pos)
   local filepath = vim.api.nvim_buf_get_name(bufnr)
+
+  local pwd = find_project_directory(filepath)
+  if pwd == nil then
+    return nil, "Unable to locate project directory, could not find pubspec.yaml"
+  end
+
+  print(pwd)
 
   local testname = get_nearest_test(bufnr, cursor_pos)
   if #testname == 0 then
@@ -74,31 +81,43 @@ M.build_line_run_params = function(bufnr, cursor_pos)
     cursor_pos = cursor_pos,
     func_name = testname,
     path = filepath,
-  }, nil
+    cwd = pwd,
+  },
+    nil
 end
 
 ---@param bufnr integer
 ---@param cursor_pos integer[]
----@return DartRunParams, nil | string
+---@return DartRunParams | nil, nil | string
 M.build_file_run_params = function(bufnr, cursor_pos)
   local filepath = vim.api.nvim_buf_get_name(bufnr)
+  local pwd = find_project_directory(filepath)
+  if pwd == nil then
+    return nil, "Unable to locate project directory, could not find pubspec.yaml"
+  end
   return {
     bufnr = bufnr,
     cursor_pos = cursor_pos,
     path = filepath,
+    cwd = pwd,
   }, nil
 end
 
 ---@param bufnr integer
 ---@param cursor_pos integer[]
----@return DartRunParams, nil | string
+---@return DartRunParams | nil, nil | string
 M.build_dir_run_params = function(bufnr, cursor_pos)
   local filepath = vim.api.nvim_buf_get_name(bufnr)
+  local pwd = find_project_directory(filepath)
+  if pwd == nil then
+    return nil, "Unable to locate project directory, could not find pubspec.yaml"
+  end
   local folder = vim.fn.fnamemodify(filepath, ":h")
   return {
     bufnr = bufnr,
     cursor_pos = cursor_pos,
     path = folder,
+    cwd = pwd,
   }, nil
 end
 
@@ -160,14 +179,22 @@ end
 
 ---@param params DartRunParams
 M.title = function(params)
-  local test_name = ""
+  local test_path = ""
+  if params.path and #params.path > 0 then
+    test_path = params.path:gsub("^" .. params.cwd, "")
+    test_path = test_path:gsub("^/", "")
+  end
+  if #test_path == 0 then
+    return "Running all"
+  end
+  local title = "Running dir: " .. test_path
+  if test_path:sub(-#".dart") == ".dart" then
+    title = "Running file: " .. test_path
+  end
   if params.func_name and #params.func_name > 0 then
-    test_name = params.func_name
+    return title .. ":" .. params.func_name
   end
-  if #test_name == 0 then
-    return params.path
-  end
-  return params.path .. " - " .. test_name
+  return title
 end
 
 ---@param bufnr integer
