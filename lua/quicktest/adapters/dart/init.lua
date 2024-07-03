@@ -31,10 +31,31 @@ local function ltrim(s)
 end
 
 local function get_nearest_test(bufnr, cursor_pos)
+  local function remove_dollar_signs(str)
+    -- Define a pattern to match '$' followed by a character (not escaped)
+    local pattern = "(\\?%$)(%a)"
+
+    -- Replace occurrences of '$' followed by a character with just the character
+    local result = str:gsub(pattern, function(dollar, char)
+      -- If the '$' is escaped, leave it as is
+      if dollar == "\\" then
+        return dollar .. char
+      else
+        return char
+      end
+    end)
+
+    return result
+  end
+
   local function clean_name(s)
     local extracted = s:match('"([^"]+)"')
     if extracted then
-      return extracted
+      return remove_dollar_signs(extracted)
+    end
+    extracted = s:match("'([^']+)'")
+    if extracted then
+      return remove_dollar_signs(extracted)
     end
     return ""
   end
@@ -68,8 +89,6 @@ M.build_line_run_params = function(bufnr, cursor_pos)
   if pwd == nil then
     return nil, "Unable to locate project directory, could not find pubspec.yaml"
   end
-
-  print(pwd)
 
   local testname = get_nearest_test(bufnr, cursor_pos)
   if #testname == 0 then
