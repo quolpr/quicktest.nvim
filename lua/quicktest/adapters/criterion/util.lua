@@ -83,12 +83,45 @@ function M.get_test_exe_from_buffer(bufnr, builddir)
       for _, source in ipairs(target_source["sources"]) do
         -- print(vim.inspect(source))
         if source == bufname then
-          return target["filename"][1]
+          return target["name"]
         end
       end
     end
   end
   return ""
+end
+
+---@class JsonContext
+---@field open boolean State indicating opening bracket has been found and data should be added to the text field
+---@field text string All JSON text
+
+---This function is fed all output from running the test executable and tries to capture a JSON-document in the stream.
+---It searches for the opening and closing brackets both of which are assumed to be on new lines.
+---This function assumes the pretty-printed JSON data as output from the criterion test exectuable when passed the '--json' argument
+---Return true if JSON was successfully captured.
+---@param data string
+---@param json JsonContext
+---@return boolean, table | nil
+function M.capture_json(data, json)
+  local result = nil
+  local done = false
+
+  if vim.startswith(data, "{") then
+    json.open = true
+    json.text = ""
+  end
+
+  if json.open then
+    json.text = json.text .. data .. "\n"
+  end
+
+  if vim.startswith(data, "}") then
+    json.open = false
+    result = vim.json.decode(json.text)
+    done = true
+  end
+
+  return done, result
 end
 
 return M

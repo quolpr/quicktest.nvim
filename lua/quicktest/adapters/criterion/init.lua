@@ -26,6 +26,7 @@ local M = {
 ---@field test_exe string
 ---@field bufnr integer
 ---@field cursor_pos integer[]
+---@field builddir string
 
 ---@param bufnr integer
 ---@param cursor_pos integer[]
@@ -43,7 +44,9 @@ M.build_file_run_params = function(bufnr, cursor_pos)
     test_exe = test_exe,
     bufnr = bufnr,
     cursor_pos = cursor_pos,
-  }, nil
+    builddir = builddir,
+  },
+    nil
 end
 
 ---@param bufnr integer
@@ -73,7 +76,9 @@ M.build_line_run_params = function(bufnr, cursor_pos)
     test_exe = test_exe,
     bufnr = bufnr,
     cursor_pos = cursor_pos,
-  }, nil
+    builddir = builddir,
+  },
+    nil
 end
 
 --- Executes the test with the given parameters.
@@ -83,9 +88,7 @@ end
 M.run = function(params, send)
   -- Build the project so we can show potential build errors in the UI.
   -- Otherwise the test will fail silently-ish providing little insight to the user.
-
-  local builddir = M.options.builddir and M.options.builddir(params.bufnr) or "build"
-  local compile = meson.compile(builddir)
+  local compile = meson.compile(params.builddir)
 
   if compile.return_val ~= 0 then
     for _, line in ipairs(compile.text) do
@@ -95,27 +98,33 @@ M.run = function(params, send)
     return -1
   end
 
-  local test_output = ""
+  ---@type JsonContext
+  local json = { open = false, text = "" }
 
-  --- Run the tests
-  local job = Job:new({
-    command = params.test_exe,
-
-    args = criterion.make_test_args(
+  local criterion_args = table.concat(
+    criterion.make_test_args(
       params.test.test_suite,
       params.test.test_name,
       M.options.additional_args and M.options.additional_args(params.bufnr) or {}
     ),
+    " "
+  )
 
+  --- Run the tests
+  local job = Job:new({
+    command = "meson",
+    args = { "test", params.test_exe, "-C", params.builddir, "-v", "--test-args=" .. criterion_args },
     on_stdout = function(_, data)
-      test_output = test_output .. data
+      local done, report = util.capture_json(data, json)
+      if done and report then
+        util.print_results(report, send)
+        M.test_results = report
+      end
     end,
     on_stderr = function(_, data)
       send({ type = "stderr", output = data })
     end,
     on_exit = function(_, return_val)
-      M.test_results = vim.json.decode(test_output)
-      util.print_results(M.test_results, send)
       send({ type = "exit", code = return_val })
     end,
   })
