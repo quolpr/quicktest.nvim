@@ -27,6 +27,7 @@ local M = {
 ---@field bufnr integer
 ---@field cursor_pos integer[]
 ---@field builddir string
+---@field is_run_all boolean
 
 ---@param bufnr integer
 ---@param cursor_pos integer[]
@@ -77,6 +78,21 @@ M.build_line_run_params = function(bufnr, cursor_pos)
     bufnr = bufnr,
     cursor_pos = cursor_pos,
     builddir = builddir,
+  },
+    nil
+end
+
+---@param bufnr integer
+---@param cursor_pos integer[]
+---@return CriterionTestParams | nil, string | nil
+function M.build_all_run_params(bufnr, cursor_pos)
+  return {
+    test = {},
+    test_exe = "",
+    bufnr = bufnr,
+    cursor_pos = cursor_pos,
+    builddir = M.options.builddir and M.options.builddir(bufnr) or "build",
+    is_run_all = true,
   },
     nil
 end
@@ -138,6 +154,10 @@ end
 ---@param results any
 M.after_run = function(params, results)
   local diagnostics = {}
+  if params.is_run_all then
+    return
+  end
+
   for _, error in ipairs(util.get_error_messages(M.test_results)) do
     local line_no = criterion.locate_error(error)
     if line_no then
@@ -167,6 +187,10 @@ end
 ---@param params CriterionTestParams
 ---@return string
 M.title = function(params)
+  if params.is_run_all then
+    return "Running all tests from " .. params.builddir
+  end
+
   local args = table.concat(
     criterion.make_test_args(
       params.test.test_suite,

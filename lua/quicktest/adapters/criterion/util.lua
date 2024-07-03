@@ -38,6 +38,7 @@ function M.print_results(result_json, send)
       end
     end
   end
+  send({ type = "stdout", output = "" })
 end
 
 ---Get all error messages
