@@ -1,4 +1,7 @@
 local Job = require("plenary.job")
+local ts = require("quicktest.ts")
+
+local custom_test_method_names = {}
 
 local function find_project_directory(filepath)
   local function file_exists(path)
@@ -59,6 +62,7 @@ local function get_nearest_test(bufnr, cursor_pos)
     end
     return ""
   end
+
   for pos = cursor_pos[1], 1, -1 do
     local aline = vim.api.nvim_buf_get_lines(bufnr, pos - 1, pos, true)[1]
     local line = ltrim(aline)
@@ -66,6 +70,39 @@ local function get_nearest_test(bufnr, cursor_pos)
       return clean_name(line)
     end
   end
+
+  local names = vim.tbl_map(function(name)
+    return '"' .. name .. '"'
+  end, custom_test_method_names)
+  local names_string = table.concat(names, " ")
+  local query = [[
+  ;; group blocks
+  (expression_statement
+    (identifier) @group (#eq? @group "group")
+    (selector (argument_part (arguments . (argument (_) @namespace.name )))))
+    @namespace.definition
+
+  ;; tests blocks
+  (expression_statement
+    (identifier) @testFunc (#any-of? @testFunc "test" "testWidgets" ]] .. names_string .. [[)
+    (selector (argument_part (arguments (argument (string_literal) @test.name)))))
+    @test.definition
+  ]]
+
+  local test_name = ts.get_current_test_name(query, bufnr, cursor_pos, "test")
+  local group_name = ts.get_current_test_name(query, bufnr, cursor_pos, "namespace")
+
+  local name = nil
+  if test_name then
+    name = test_name
+  elseif group_name then
+    name = group_name
+  end
+
+  if name then
+    return clean_name(name)
+  end
+
   return ""
 end
 

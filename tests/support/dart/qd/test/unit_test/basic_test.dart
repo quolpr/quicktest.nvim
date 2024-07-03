@@ -14,4 +14,17 @@ void main()
 			expect(1 + 3, 4);
 		});
 	});
+
+	group("Testification", ()
+	{
+		test("Simple Check A", () async
+		{
+			expect(1 + 1, 2);
+		});
+
+		test("Another Check B", () async
+		{
+			expect(1 + 3, 4);
+		});
+	});
 }
