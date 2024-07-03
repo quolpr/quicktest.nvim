@@ -35,12 +35,9 @@ end
 
 local function get_nearest_test(bufnr, cursor_pos)
   local function remove_dollar_signs(str)
-    -- Define a pattern to match '$' followed by a character (not escaped)
     local pattern = "(\\?%$)(%a)"
 
-    -- Replace occurrences of '$' followed by a character with just the character
     local result = str:gsub(pattern, function(dollar, char)
-      -- If the '$' is escaped, leave it as is
       if dollar == "\\" then
         return dollar .. char
       else
