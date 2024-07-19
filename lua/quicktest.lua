@@ -3,6 +3,7 @@ local module = require("quicktest.module")
 
 local config = {
   adapters = {},
+  default_win_mode = "split",
 }
 
 ---@class MyModule
@@ -37,7 +38,7 @@ end
 
 --- @param mode WinMode?
 M.run_previous = function(mode)
-  return module.run_previous(mode)
+  return module.run_previous(M.config, mode)
 end
 
 --- @param mode WinMode?

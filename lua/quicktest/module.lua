@@ -25,6 +25,7 @@ local M = {}
 
 ---@class QuicktestConfig
 ---@field adapters QuicktestAdapter[]
+---@field default_win_mode WinMode
 
 --- @type {id: number, pid: number?} | nil
 local current_job = nil
@@ -206,7 +207,7 @@ end
 --- @param type 'line' | 'file' | 'dir' | 'all'
 --- @param mode WinMode?
 function M.prepare_and_run(config, type, mode)
-  mode = mode or M.current_win_mode()
+  mode = mode or M.current_win_mode(config.default_win_mode)
   local current_buffer = api.nvim_get_current_buf()
   local win = vim.api.nvim_get_current_win() -- Get the current active window
   local cursor_pos = vim.api.nvim_win_get_cursor(win) -- Get the cursor position in the window
@@ -235,9 +236,10 @@ function M.prepare_and_run(config, type, mode)
   M.run(adapter, params)
 end
 
+--- @param config QuicktestConfig
 --- @param mode WinMode?
-function M.run_previous(mode)
-  mode = mode or M.current_win_mode()
+function M.run_previous(config, mode)
+  mode = mode or M.current_win_mode(config.default_win_mode)
 
   M.try_open_win(mode)
 
@@ -248,13 +250,14 @@ function M.run_previous(mode)
   M.run(previous_run.adapter, previous_run.params)
 end
 
-function M.current_win_mode()
+--- @param default_mode WinMode?
+function M.current_win_mode(default_mode)
   if ui.is_split_opened then
     return "split"
   elseif ui.is_popup_opened then
     return "popup"
   else
-    return "popup"
+    return default_mode
   end
 end
 

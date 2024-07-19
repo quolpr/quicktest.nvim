@@ -18,21 +18,19 @@ M.is_split_opened = false
 M.is_popup_opened = false
 
 local function open_popup()
-  if not popup then
-    popup = Popup({
-      enter = true,
-      bufnr = popup_buf,
-      focusable = true,
-      border = {
-        style = "rounded",
-      },
-      position = "50%",
-      size = {
-        width = "80%",
-        height = "60%",
-      },
-    })
-  end
+  popup = Popup({
+    enter = true,
+    bufnr = popup_buf,
+    focusable = true,
+    border = {
+      style = "rounded",
+    },
+    position = "50%",
+    size = {
+      width = "80%",
+      height = "60%",
+    },
+  })
 
   popup:on(event.WinClosed, function()
     M.is_popup_opened = false
@@ -48,19 +46,16 @@ local function open_popup()
 end
 
 local function open_split()
-  if not split then
-    split = Split({
-      relative = "editor",
-      position = "bottom",
-      size = "30%",
-      enter = false,
-    })
-    split.bufnr = split_buf
-  end
+  split = Split({
+    relative = "editor",
+    position = "bottom",
+    size = "30%",
+    enter = false,
+  })
+  split.bufnr = split_buf
 
   split:on(event.WinClosed, function()
     M.is_split_opened = false
-    split = nil
   end, { once = true })
 
   -- mount/open the component
@@ -70,6 +65,8 @@ local function open_split()
   -- vim.api.nvim_win_set_option(split.winid, "laststatus", 0)
 
   M.is_split_opened = true
+
+  return split
 end
 
 local function try_open_split()

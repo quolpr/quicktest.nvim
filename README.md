@@ -26,7 +26,9 @@ qt.setup({
       additional_args = function(bufnr) return {'arg1', 'arg2'} end,
     }),
     require("quicktest.adapters.dart"),
-  }
+  },
+  -- split or popup mode, when argument not specified
+  default_win_mode = "split"
 })
 
 -- Find nearest test under cursor and run in popup
@@ -130,7 +132,9 @@ Using Lazy:
         require("quicktest.adapters.elixir"),
         require("quicktest.adapters.criterion"),
         require("quicktest.adapters.dart"),
-      }
+      },
+      -- split or popup mode, when argument not specified
+      default_win_mode = "split"
     })
   end,
   dependencies = {
