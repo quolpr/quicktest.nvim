@@ -99,9 +99,13 @@ function M.run(adapter, params)
   end
 
   for _, buf in ipairs(ui.buffers) do
+    vim.api.nvim_buf_set_option(buf, "modifiable", true)
     vim.api.nvim_buf_set_lines(buf, 0, -1, false, {})
 
     ui.scroll_down(buf)
+
+    vim.api.nvim_buf_set_option(0, "modifiable", false)
+    vim.api.nvim_buf_set_option(0, "readonly", true)
   end
 
   ---@diagnostic disable-next-line: missing-parameter
@@ -136,11 +140,31 @@ function M.run(adapter, params)
     ---@diagnostic disable-next-line: missing-parameter
     a.run(function()
       while is_running() do
-        print_status()
+        -- print_status()
         u.sleep(100)
       end
     end)
 
+    --- @type {ch: integer, buf: integer}[]
+    local channelBoxes = {}
+    for _, buf in ipairs(ui.buffers) do
+      table.insert(channelBoxes, {
+        ch = vim.api.nvim_open_term(buf, {}),
+        buf = buf,
+      })
+
+      vim.api.nvim_create_autocmd("TermEnter", {
+        buffer = buf,
+        callback = function()
+          print("autocmd 2!")
+          vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<C-\\><C-N>", true, true, true), "n", false)
+        end,
+      })
+
+      ui.scroll_down(buf)
+    end
+
+    print("start")
     local results = {}
     while is_running() do
       local result = receiver.recv()
@@ -152,12 +176,12 @@ function M.run(adapter, params)
         return
       end
 
-      for _, buf in ipairs(ui.buffers) do
-        local should_scroll = ui.should_continue_scroll(buf)
+      for _, box in ipairs(channelBoxes) do
+        local should_scroll = ui.should_continue_scroll(box.buf)
         if result.type == "exit" then
           job.exit_code = result.code
 
-          print_status()
+          -- print_status()
           current_job = nil
           if adapter.after_run then
             adapter.after_run(params, results)
@@ -166,38 +190,42 @@ function M.run(adapter, params)
 
         if result.type == "stdout" then
           if result.output then
-            local line_count = vim.api.nvim_buf_line_count(buf)
-            local lines = vim.split(result.output, "\n")
+            -- chansend(box.ch, result.output)
+            -- print(result.output)
+            vim.api.nvim_chan_send(box.ch, result.output .. "\n")
+            -- local line_count = vim.api.nvim_buf_line_count(box.buf)
+            -- local lines = vim.split(result.output, "\n")
+            --
+            -- table.insert(lines, "")
+            -- table.insert(lines, "")
+            --
+            -- baleia.buf_set_lines(box.buf, line_count - 2, -1, false, lines)
 
-            table.insert(lines, "")
-            table.insert(lines, "")
-
-            baleia.buf_set_lines(buf, line_count - 2, -1, false, lines)
-
-            print_status()
+            -- print_status()
           end
         end
 
         if result.type == "stderr" then
-          local line_count = vim.api.nvim_buf_line_count(buf)
+          local line_count = vim.api.nvim_buf_line_count(box.buf)
           local lines = vim.split(result.output, "\n")
 
           table.insert(lines, "")
           table.insert(lines, "")
-          if #lines > 0 then
-            vim.api.nvim_buf_set_lines(buf, line_count - 2, -1, false, lines)
-
-            for i = 0, #lines - 1 do
-              vim.api.nvim_buf_add_highlight(buf, -1, "DiagnosticError", line_count - 2 + i, 0, -1)
-            end
-
-            print_status()
-          end
+          -- if #lines > 0 then
+          --   vim.api.nvim_buf_set_lines(box.buf, line_count - 2, -1, false, lines)
+          --
+          --   for i = 0, #lines - 1 do
+          --     vim.api.nvim_buf_add_highlight(box.buf, -1, "DiagnosticError", line_count - 2 + i, 0, -1)
+          --   end
+          --
+          --   -- print_status()
+          -- end
         end
 
-        if should_scroll then
-          ui.scroll_down(buf)
-        end
+        print("scroll", should_scroll)
+        -- if should_scroll then
+        -- ui.scroll_down(box.buf)
+        -- end
       end
     end
   end)

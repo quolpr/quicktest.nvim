@@ -49,9 +49,14 @@ describe("sum namespace", () => {
   test("222", async () => {
     console.log(colorString(Color.FgRed, "test \n kek"));
 
-    await new Promise((resolve) => setTimeout(resolve, 5000));
+    await new Promise((resolve) => setTimeout(resolve, 1000));
 
     expect(sum(1, 2)).toBe(3);
+
+    for (let i = 0; i < 10; i++) {
+      console.log(i);
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
     console.log("h");
   });
 });

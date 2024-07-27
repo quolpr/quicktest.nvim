@@ -128,6 +128,7 @@ function M.should_continue_scroll(buf)
       local current_pos = vim.api.nvim_win_get_cursor(win)
       local line_count = vim.api.nvim_buf_line_count(buf)
 
+      print("should_continue_scroll", current_pos[1], line_count - 2)
       return current_pos[1] >= line_count - 2
     end
   end
