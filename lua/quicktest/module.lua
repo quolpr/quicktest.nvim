@@ -50,6 +50,9 @@ local function get_adapter(config, type)
   return adapter
 end
 
+local set_lines = baleia.buf_set_lines
+-- local set_lines = vim.api.nvim_buf_set_lines
+
 --- @param adapter QuicktestAdapter
 --- @param params any
 function M.run(adapter, params)
@@ -172,7 +175,7 @@ function M.run(adapter, params)
             table.insert(lines, "")
             table.insert(lines, "")
 
-            baleia.buf_set_lines(buf, line_count - 2, -1, false, lines)
+            set_lines(buf, line_count - 2, -1, false, lines)
 
             print_status()
           end
@@ -185,7 +188,7 @@ function M.run(adapter, params)
           table.insert(lines, "")
           table.insert(lines, "")
           if #lines > 0 then
-            vim.api.nvim_buf_set_lines(buf, line_count - 2, -1, false, lines)
+            set_lines(buf, line_count - 2, -1, false, lines)
 
             for i = 0, #lines - 1 do
               vim.api.nvim_buf_add_highlight(buf, -1, "DiagnosticError", line_count - 2 + i, 0, -1)

@@ -8,6 +8,9 @@ local api = vim.api
 local split_buf = api.nvim_create_buf(false, true)
 local popup_buf = api.nvim_create_buf(false, true)
 
+vim.api.nvim_buf_set_option(split_buf, "undolevels", -1)
+vim.api.nvim_buf_set_option(popup_buf, "undolevels", -1)
+
 --- @type NuiSplit | nil
 local split
 --- @type NuiPopup | nil

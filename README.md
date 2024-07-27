@@ -85,11 +85,11 @@ qt.setup({
   }
 })
 
-vim.keymap.set("n", "<leader>tr", qt.run_line, {
-  desc = "[T]est [R]un",
+vim.keymap.set("n", "<leader>tl", qt.run_line, {
+  desc = "[T]est Run [L]line",
 })
-vim.keymap.set("n", "<leader>tR", qt.run_file, {
-  desc = "[T]est [R]un file",
+vim.keymap.set("n", "<leader>tf", qt.run_file, {
+  desc = "[T]est Run [F]ile",
 })
 vim.keymap.set("n", "<leader>td", qt.run_dir, {
   desc = "[T]est Run [D]ir",
@@ -100,11 +100,11 @@ vim.keymap.set("n", "<leader>ta", qt.run_all, {
 vim.keymap.set("n", "<leader>tR", qt.run_previous, {
   desc = "[T]est Run [P]revious",
 })
-vim.keymap.set("n", "<leader>tt", function()
-  qt.toggle_win("popup")
-end, {
-  desc = "[T]est [T]oggle popup window",
-})
+-- vim.keymap.set("n", "<leader>tt", function()
+--   qt.toggle_win("popup")
+-- end, {
+--   desc = "[T]est [T]oggle popup window",
+-- })
 vim.keymap.set("n", "<leader>tt", function()
   qt.toggle_win("split")
 end, {
@@ -144,25 +144,25 @@ Using Lazy:
   },
   keys = {
     {
-      "<leader>tr",
+      "<leader>tl",
       function()
         local qt = require("quicktest")
         -- current_win_mode return currently opened panel, split or popup
         qt.run_line()
         -- You can force open split or popup like this:
-        -- qt().run_current('split')
-        -- qt().run_current('popup')
+        -- qt.run_current('split')
+        -- qt.run_current('popup')
       end,
-      desc = "[T]est [R]un",
+      desc = "[T]est Run [L]line",
     },
     {
-      "<leader>tR",
+      "<leader>tf",
       function()
         local qt = require("quicktest")
 
         qt.run_file()
       end,
-      desc = "[T]est [R]un file",
+      desc = "[T]est Run [F]ile",
     },
     {
       '<leader>td',
@@ -196,18 +196,9 @@ Using Lazy:
       function()
         local qt = require("quicktest")
 
-        qt.toggle_win("popup")
-      end,
-      desc = "[T]est [T]oggle popup window",
-    },
-    {
-      "<leader>ts",
-      function()
-        local qt = require("quicktest")
-
         qt.toggle_win("split")
       end,
-      desc = "[T]est Toggle [S]plit window",
+      desc = "[T]est [T]oggle split window",
     },
   },
 }
