@@ -4,7 +4,7 @@ Quicktest improves your testing experience in real-time with flexible display op
 
 Currently supported languages: Go, Typescript/Javascript(vitest), Elixir, Dart, C(criterion). There is also a template in Readme below about how to create own adapter. Should be pretty easy, just shell command execute!
 
-![Example](https://github.com/quolpr/quicktest.nvim/assets/7958527/b3629bc9-2886-468c-a6e2-6b826dc404d0)
+https://github.com/user-attachments/assets/9fcb3e17-f521-4660-9d9a-d9f763de5a1b
 
 ## Api
 
