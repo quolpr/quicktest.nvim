@@ -2,7 +2,7 @@
 
 Quicktest improves your testing experience in real-time with flexible display options like popups or split windows, customized to your workflow preferences. Key features include identifying the nearest function and triggering its test, rerunning previous tests from any location, and live scrolling of results alongside a running timer for immediate feedback.
 
-Currently supported languages: Go, Typescript/Javascript(vitest), Elixir, Dart. There is also a template in Readme below about how to create own adapter. Should be pretty easy!
+Currently supported languages: Go, Typescript/Javascript(vitest), Elixir, Dart, C(criterion). There is also a template in Readme below about how to create own adapter. Should be pretty easy, just shell command execute!
 
 ![Example](https://github.com/quolpr/quicktest.nvim/assets/7958527/b3629bc9-2886-468c-a6e2-6b826dc404d0)
 
@@ -108,7 +108,12 @@ vim.keymap.set("n", "<leader>tR", qt.run_previous, {
 vim.keymap.set("n", "<leader>tt", function()
   qt.toggle_win("split")
 end, {
-  desc = "[T]est Toggle [S]plit window",
+  desc = "[T]est [T]oggle Window",
+})
+vim.keymap.set("n", "<leader>tc", function()
+  qt.cancel_current_run()
+end, {
+  desc = "[T]est [C]ancel Current Run",
 })
 ```
 
@@ -150,8 +155,8 @@ Using Lazy:
         -- current_win_mode return currently opened panel, split or popup
         qt.run_line()
         -- You can force open split or popup like this:
-        -- qt.run_current('split')
-        -- qt.run_current('popup')
+        -- qt.run_line('split')
+        -- qt.run_line('popup')
       end,
       desc = "[T]est Run [L]line",
     },
@@ -198,7 +203,16 @@ Using Lazy:
 
         qt.toggle_win("split")
       end,
-      desc = "[T]est [T]oggle split window",
+      desc = "[T]est [T]oggle Window",
+    },
+    {
+      "<leader>tc",
+      function()
+        local qt = require("quicktest")
+
+        qt.cancel_current_run()
+      end,
+      desc = "[T]est [C]ancel Current Run",
     },
   },
 }

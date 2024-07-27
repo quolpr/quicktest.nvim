@@ -61,6 +61,10 @@ M.run_all = function(mode)
   return module.prepare_and_run(M.config, "all", mode)
 end
 
+M.cancel_current_run = function()
+  module.kill_current_run()
+end
+
 -- module.run(require("quicktest.adapters.golang"), {
 --   func_names = { "TestSum" },
 --   sub_func_names = {},

@@ -27,7 +27,7 @@ local M = {}
 ---@field adapters QuicktestAdapter[]
 ---@field default_win_mode WinMode
 
---- @type {id: number, pid: number?} | nil
+--- @type {id: number, started_at: number, pid: number?} | nil
 local current_job = nil
 local previous_run = nil
 
@@ -65,11 +65,10 @@ function M.run(adapter, params)
     end
   end
 
-  --- @type {id: number, pid: number?, exit_code: number?}
-  local job = { id = math.random(10000000000000000) }
+  --- @type {id: number, started_at: number, pid: number?, exit_code: number?}
+  local job = { id = math.random(10000000000000000), started_at = vim.uv.now() }
   current_job = job
   previous_run = { adapter = adapter, params = params }
-  local current_time = vim.uv.now()
 
   local is_running = function()
     return current_job and job.id == current_job.id
@@ -79,7 +78,7 @@ function M.run(adapter, params)
     for _, buf in ipairs(ui.buffers) do
       local line_count = vim.api.nvim_buf_line_count(buf)
 
-      local passedTime = vim.loop.now() - current_time
+      local passedTime = vim.loop.now() - job.started_at
       local time_display = string.format("%.2f", passedTime / 1000) .. "s"
 
       if job.exit_code == nil then
@@ -251,6 +250,24 @@ function M.run_previous(config, mode)
   end
 
   M.run(previous_run.adapter, previous_run.params)
+end
+
+function M.kill_current_run()
+  if current_job then
+    local job = current_job
+    vim.system({ "kill", tostring(current_job.pid) }):wait()
+    current_job = nil
+
+    for _, buf in ipairs(ui.buffers) do
+      local line_count = vim.api.nvim_buf_line_count(buf)
+
+      local passedTime = vim.loop.now() - job.started_at
+      local time_display = string.format("%.2f", passedTime / 1000) .. "s"
+
+      vim.api.nvim_buf_set_lines(buf, line_count - 1, line_count, false, { "Cancelled after " .. time_display })
+      vim.api.nvim_buf_add_highlight(buf, -1, "DiagnosticWarn", line_count - 1, 0, -1)
+    end
+  end
 end
 
 --- @param default_mode WinMode?
