@@ -7,6 +7,7 @@ Table of Contents                         *my-template-docs-table-of-contents*
   - Features                             |my-template-docs-quicktest-features|
   - Api                                       |my-template-docs-quicktest-api|
   - Installation                     |my-template-docs-quicktest-installation|
+  - Screenshots                       |my-template-docs-quicktest-screenshots|
   - Building your own adapter|my-template-docs-quicktest-building-your-own-adapter|
 
 ==============================================================================
@@ -272,6 +273,24 @@ Using Lazy:
       },
     }
 <
+
+
+SCREENSHOTS                           *my-template-docs-quicktest-screenshots*
+
+
+RUNNING TEST IN SPLIT WINDOW ~
+
+
+
+
+RUNNING TEST IN POPUP WINDOW ~
+
+
+
+
+CANCELED TEST ~
+
+
 
 
 BUILDING YOUR OWN ADAPTER*my-template-docs-quicktest-building-your-own-adapter*
