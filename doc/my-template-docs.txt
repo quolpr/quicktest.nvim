@@ -1,4 +1,4 @@
-*my-template-docs.txt*      For Neovim >= 0.8.0      Last change: 2024 July 27
+*my-template-docs.txt*      For Neovim >= 0.8.0      Last change: 2024 July 28
 
 ==============================================================================
 Table of Contents                         *my-template-docs-table-of-contents*
@@ -7,7 +7,6 @@ Table of Contents                         *my-template-docs-table-of-contents*
   - Api                                       |my-template-docs-quicktest-api|
   - Installation                     |my-template-docs-quicktest-installation|
   - Features                             |my-template-docs-quicktest-features|
-  - Motivation                         |my-template-docs-quicktest-motivation|
   - Building your own adapter|my-template-docs-quicktest-building-your-own-adapter|
 
 ==============================================================================
@@ -252,20 +251,6 @@ FEATURES                                 *my-template-docs-quicktest-features*
 - **Adaptive Display Options:** Instantly displays running test in a popup or uses a split view if already open, adapting to your current setup.
 
 If these features resonate with you, Quicktest might be just what you need!
-
-
-MOTIVATION                             *my-template-docs-quicktest-motivation*
-
-I like using Neotest, but there are several features that I really miss:
-
-1. Ability to reset test results with each run.
-2. Automatically force open a popup when running test, or keep it in split view if split is opened.
-3. Stability and performance are not as good as desired. Neotest parses the entire codebase to find tests (unless `discovery.enable = false` is configured), which slows down Neovim. But, to be fair, you can still configure it pretty easy to make it performant, check the guide <https://github.com/fredrikaverpil/neotest-golang#%EF%B8%8F-tips--troubleshooting>. As for personal prefernce, I want tools to be fast out of the box.
-4. I would appreciate better feedback, such as displaying a timer to show how long the test is running.
-5. I want to see test results as they happen, line by line, not just at the end.
-6. Make output to automatically scroll while the test is running.
-7. Depending on the task, sometimes a popup is best, sometimes a split window. It would be great if the plugin could adapt to the context, potentially displaying results in both views simultaneously.
-8. An easy-to-use API for adding new integrations while maintaining flexibility is also needed.
 
 
 BUILDING YOUR OWN ADAPTER*my-template-docs-quicktest-building-your-own-adapter*
