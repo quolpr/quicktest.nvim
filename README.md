@@ -31,7 +31,11 @@ qt.setup({
       -- bin = function(bufnr) return 'go' end
       -- cwd = function(bufnr) return 'your-cwd' end
     }),
-    require("quicktest.adapters.vitest"),
+    require("quicktest.adapters.vitest")({
+      -- bin = function(bufnr) return 'vitest' end
+      -- cwd = function(bufnr) return bufnr end
+      -- config_path = function(bufnr) return 'vitest.config.js' end
+    }),
     require("quicktest.adapters.elixir"),
     require("quicktest.adapters.criterion")({
       builddir = function(bufnr) return "build" end,
@@ -92,7 +96,11 @@ local qt = require("quicktest")
 qt.setup({
   adapters = {
     require("quicktest.adapters.golang"),
-    require("quicktest.adapters.vitest"),
+    require("quicktest.adapters.vitest")({
+      -- bin = function(bufnr) return 'vitest' end
+      -- cwd = function(bufnr) return bufnr end
+      -- config_path = function(bufnr) return 'vitest.config.js' end
+    }),
     require("quicktest.adapters.elixir"),
     require("quicktest.adapters.criterion"),
     require("quicktest.adapters.dart"),
@@ -151,7 +159,11 @@ Using Lazy:
           -- bin = function(bufnr) return 'go' end
           -- cwd = function(bufnr) return 'your-cwd' end
         }),
-        require("quicktest.adapters.vitest"),
+        require("quicktest.adapters.vitest")({
+          -- bin = function(bufnr) return 'vitest' end
+          -- cwd = function(bufnr) return bufnr end
+          -- config_path = function(bufnr) return 'vitest.config.js' end
+        }),
         require("quicktest.adapters.elixir"),
         require("quicktest.adapters.criterion"),
         require("quicktest.adapters.dart"),

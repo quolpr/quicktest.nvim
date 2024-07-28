@@ -3,9 +3,17 @@ local q = require("quicktest.adapters.vitest.query")
 local ts = require("quicktest.ts")
 local fs = require("quicktest.fs_utils")
 
+---@class VitestAdapterOptions
+---@field cwd (fun(bufnr: integer): string)?
+---@field bin (fun(bufnr: integer): string)?
+---@field config_path (fun(bufnr: integer): string)?
+
 local M = {
   name = "vitest",
+  ---@type VitestAdapterOptions
+  options = {},
 }
+
 ---@class VitestRunParams
 ---@field func_names string[]
 ---@field ns_name string
@@ -92,25 +100,29 @@ end
 ---@param cursor_pos integer[]
 ---@return VitestRunParams | nil, string | nil
 M.build_line_run_params = function(bufnr, cursor_pos)
-  local cwd = find_cwd(bufnr)
+  local cwd = M.options.cwd and M.options.cwd(bufnr) or find_cwd(bufnr)
 
   if not cwd then
     return nil, "Failed to find cwd"
   end
 
-  local bin = find_bin(cwd)
+  local bin = M.options.bin and M.options.bin(bufnr) or find_bin(cwd)
 
   if not bin then
     return nil, "Failed to find vitest binary"
   end
+
+  local config_path = M.options.config_path and M.options.config_path(bufnr)
+    or get_vitest_config(cwd)
+    or "vitest.config.js"
 
   local params = {
     ns_name = ts.get_current_test_name(q, bufnr, cursor_pos, "namespace"),
     test_name = ts.get_current_test_name(q, bufnr, cursor_pos, "test"),
     cwd = cwd,
     bin = bin,
-    config_path = get_vitest_config(cwd) or "vitest.config.js",
-    -- Add other parameters as need ЖСd
+    config_path = config_path,
+    -- Add other parameters as needed
   }
   return params, nil
 end
@@ -118,23 +130,27 @@ end
 ---@param bufnr integer
 ---@return VitestRunParams | nil, string | nil
 M.build_all_run_params = function(bufnr)
-  local cwd = find_cwd(bufnr)
+  local cwd = M.options.cwd and M.options.cwd(bufnr) or find_cwd(bufnr)
 
   if not cwd then
     return nil, "Failed to find cwd"
   end
 
-  local bin = find_bin(cwd)
+  local bin = M.options.bin and M.options.bin(bufnr) or find_bin(cwd)
 
   if not bin then
     return nil, "Failed to find vitest binary"
   end
 
+  local config_path = M.options.config_path and M.options.config_path(bufnr)
+    or get_vitest_config(cwd)
+    or "vitest.config.js"
+
   local params = {
     cwd = cwd,
     bin = bin,
-    config_path = get_vitest_config(cwd) or "vitest.config.js",
-    -- Add other parameters as need ЖСd
+    config_path = config_path,
+    -- Add other parameters as needed
   }
   return params, nil
 end
@@ -144,22 +160,26 @@ end
 ---@return VitestRunParams | nil, string | nil
 ---@diagnostic disable-next-line: unused-local
 M.build_file_run_params = function(bufnr, cursor_pos)
-  local cwd = find_cwd(bufnr)
+  local cwd = M.options.cwd and M.options.cwd(bufnr) or find_cwd(bufnr)
 
   if not cwd then
     return nil, "Failed to find cwd"
   end
 
-  local bin = find_bin(cwd)
+  local bin = M.options.bin and M.options.bin(bufnr) or find_bin(cwd)
 
   if not bin then
     return nil, "Failed to find vitest binary"
   end
 
+  local config_path = M.options.config_path and M.options.config_path(bufnr)
+    or get_vitest_config(cwd)
+    or "vitest.config.js"
+
   local params = {
     cwd = cwd,
     bin = bin,
-    config_path = get_vitest_config(cwd) or "vitest.config.js",
+    config_path = config_path,
     -- Add other parameters as needed
   }
 
@@ -271,5 +291,15 @@ M.is_enabled = function(bufnr, type)
       or vim.endswith(file_path, ".jsx")
   end
 end
+
+--- Adapter options.
+setmetatable(M, {
+  ---@param opts GoAdapterOptions
+  __call = function(_, opts)
+    M.options = opts
+
+    return M
+  end,
+})
 
 return M

@@ -5,6 +5,7 @@ local Split = require("nui.split")
 local M = {}
 
 local api = vim.api
+
 local split_buf = api.nvim_create_buf(false, true)
 local popup_buf = api.nvim_create_buf(false, true)
 
@@ -13,9 +14,6 @@ vim.api.nvim_buf_set_option(popup_buf, "undolevels", -1)
 
 vim.api.nvim_buf_set_option(split_buf, "filetype", "quicktest-output")
 vim.api.nvim_buf_set_option(popup_buf, "filetype", "quicktest-output")
-
-vim.api.nvim_buf_set_name(split_buf, "Quicktest Output Split")
-vim.api.nvim_buf_set_name(popup_buf, "Quicktest Output Popup")
 
 --- @type NuiSplit | nil
 local split
