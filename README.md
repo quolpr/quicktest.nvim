@@ -229,19 +229,6 @@ Using Lazy:
 
 If these features resonate with you, Quicktest might be just what you need!
 
-## Motivation
-
-I like using Neotest, but there are several features that I really miss:
-
-1. Ability to reset test results with each run.
-2. Automatically force open a popup when running test, or keep it in split view if split is opened.
-3. Stability and performance are not as good as desired. Neotest parses the entire codebase to find tests (unless `discovery.enable = false` is configured), which slows down Neovim. But, to be fair, you can still configure it pretty easy to make it performant, [check the guide](https://github.com/fredrikaverpil/neotest-golang#%EF%B8%8F-tips--troubleshooting). As for personal prefernce, I want tools to be fast out of the box.
-4. I would appreciate better feedback, such as displaying a timer to show how long the test is running.
-5. I want to see test results as they happen, line by line, not just at the end.
-6. Make output to automatically scroll while the test is running.
-7. Depending on the task, sometimes a popup is best, sometimes a split window. It would be great if the plugin could adapt to the context, potentially displaying results in both views simultaneously.
-8. An easy-to-use API for adding new integrations while maintaining flexibility is also needed.
-
 ## Building your own adapter
 
 Here is the template of how adapter for any language could be written. For more examples just check `lua/quicktest/adapters`. For tresitter methods investigation you can take code from adapters of neotest from https://github.com/nvim-neotest/neotest?tab=readme-ov-file#supported-runners
