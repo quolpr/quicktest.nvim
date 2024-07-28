@@ -3,7 +3,6 @@ local notify = require("quicktest.notify")
 local a = require("plenary.async")
 local u = require("plenary.async.util")
 local ui = require("quicktest.ui")
-local baleia = require("baleia").setup({ name = "QuicktestOutputColors" })
 
 local M = {}
 
@@ -26,6 +25,7 @@ local M = {}
 ---@class QuicktestConfig
 ---@field adapters QuicktestAdapter[]
 ---@field default_win_mode WinMode
+---@field use_baleia boolean
 
 --- @type {id: number, started_at: number, pid: number?} | nil
 local current_job = nil
@@ -50,18 +50,44 @@ local function get_adapter(config, type)
   return adapter
 end
 
-local set_lines = baleia.buf_set_lines
--- local set_lines = vim.api.nvim_buf_set_lines
+local baleia_pkg = nil
+local get_baleia = function()
+  if baleia_pkg then
+    return baleia_pkg
+  else
+    baleia_pkg = require("baleia").setup({ name = "QuicktestOutputColors" })
+    return baleia_pkg
+  end
+end
 
 --- @param adapter QuicktestAdapter
 --- @param params any
-function M.run(adapter, params)
+--- @params config QuicktestConfig
+function M.run(adapter, params, config)
   if current_job then
     if current_job.pid then
       vim.system({ "kill", tostring(current_job.pid) }):wait()
       current_job = nil
     else
       return notify.warn("Already running")
+    end
+  end
+
+  local set_ansi_lines = vim.api.nvim_buf_set_lines
+  if config.use_baleia then
+    set_ansi_lines = get_baleia().buf_set_lines
+  else
+    --- @param buf integer
+    --- @param start integer
+    --- @param finish number
+    --- @param strict_indexing boolean
+    --- @param replacements string[]
+    set_ansi_lines = function(buf, start, finish, strict_indexing, replacements)
+      local new_lines = {}
+      for i, line in ipairs(replacements) do
+        new_lines[i] = string.gsub(line, "[\27\155][][()#;?%d]*[A-PRZcf-ntqry=><~]", "")
+      end
+      vim.api.nvim_buf_set_lines(buf, start, finish, strict_indexing, new_lines)
     end
   end
 
@@ -174,7 +200,7 @@ function M.run(adapter, params)
             table.insert(lines, "")
             table.insert(lines, "")
 
-            set_lines(buf, line_count - 2, -1, false, lines)
+            set_ansi_lines(buf, line_count - 2, -1, false, lines)
 
             print_status()
           end
@@ -187,7 +213,7 @@ function M.run(adapter, params)
           table.insert(lines, "")
           table.insert(lines, "")
           if #lines > 0 then
-            set_lines(buf, line_count - 2, -1, false, lines)
+            set_ansi_lines(buf, line_count - 2, -1, false, lines)
 
             for i = 0, #lines - 1 do
               vim.api.nvim_buf_add_highlight(buf, -1, "DiagnosticError", line_count - 2 + i, 0, -1)
@@ -235,7 +261,7 @@ function M.prepare_and_run(config, type, mode)
 
   M.try_open_win(mode)
 
-  M.run(adapter, params)
+  M.run(adapter, params, config)
 end
 
 --- @param config QuicktestConfig
@@ -249,7 +275,7 @@ function M.run_previous(config, mode)
     return notify.warn("No previous run")
   end
 
-  M.run(previous_run.adapter, previous_run.params)
+  M.run(previous_run.adapter, previous_run.params, config)
 end
 
 function M.kill_current_run()

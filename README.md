@@ -40,7 +40,9 @@ qt.setup({
     require("quicktest.adapters.dart"),
   },
   -- split or popup mode, when argument not specified
-  default_win_mode = "split"
+  default_win_mode = "split",
+  -- Baleia make coloured output. Requires baleia package
+  use_baleia = true
 })
 
 -- Find nearest test under cursor and run in popup
@@ -94,7 +96,11 @@ qt.setup({
     require("quicktest.adapters.elixir"),
     require("quicktest.adapters.criterion"),
     require("quicktest.adapters.dart"),
-  }
+  },
+  -- split or popup mode, when argument not specified
+  default_win_mode = "split",
+  -- Baleia make coloured output. Requires baleia package
+  use_baleia = true
 })
 
 vim.keymap.set("n", "<leader>tl", qt.run_line, {
@@ -151,7 +157,9 @@ Using Lazy:
         require("quicktest.adapters.dart"),
       },
       -- split or popup mode, when argument not specified
-      default_win_mode = "split"
+      default_win_mode = "split",
+      -- Baleia make coloured output. Requires baleia package
+      use_baleia = true
     })
   end,
   dependencies = {

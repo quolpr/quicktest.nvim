@@ -4,6 +4,7 @@ local module = require("quicktest.module")
 local config = {
   adapters = {},
   default_win_mode = "split",
+  use_baleia = true,
 }
 
 ---@class MyModule
