@@ -251,6 +251,17 @@ Using Lazy:
 ```
 
 
+## Screenshots
+
+### Running test in split window
+<img width="1074" alt="image" src="https://github.com/user-attachments/assets/2d14d302-2b48-49b3-bdbd-1c2c2dd0a893">
+
+### Running test in popup window
+<img width="1074" alt="image" src="https://github.com/user-attachments/assets/13109577-77f6-48c2-b6eb-326e27891331">
+
+### Canceled test
+<img width="1074" alt="Screenshot 2024-07-28 at 22 38 42" src="https://github.com/user-attachments/assets/fe1cf395-c5b7-4846-9ffa-2521a875e423">
+
 ## Building your own adapter
 
 Here is the template of how adapter for any language could be written. For more examples just check `lua/quicktest/adapters`. For tresitter methods investigation you can take code from adapters of neotest from https://github.com/nvim-neotest/neotest?tab=readme-ov-file#supported-runners
