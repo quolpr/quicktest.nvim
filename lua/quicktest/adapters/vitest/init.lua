@@ -35,6 +35,7 @@ local function escape_test_pattern(s)
       :gsub("%$", "%\\$")
       :gsub("%^", "%\\^")
       :gsub("%/", "%\\/")
+      :gsub("%%s", ".*")  -- Match `test.each([...])("Test %s", ...)`
   )
 end
 
@@ -116,9 +117,12 @@ M.build_line_run_params = function(bufnr, cursor_pos)
     or get_vitest_config(cwd)
     or "vitest.config.js"
 
+  local file = vim.api.nvim_buf_get_name(bufnr) -- Get the current buffer's file path
+
   local params = {
     ns_name = ts.get_current_test_name(q, bufnr, cursor_pos, "namespace"),
     test_name = ts.get_current_test_name(q, bufnr, cursor_pos, "test"),
+    file = file,
     cwd = cwd,
     bin = bin,
     config_path = config_path,
@@ -176,10 +180,13 @@ M.build_file_run_params = function(bufnr, cursor_pos)
     or get_vitest_config(cwd)
     or "vitest.config.js"
 
+  local file = vim.api.nvim_buf_get_name(bufnr) -- Get the current buffer's file path
+
   local params = {
     cwd = cwd,
     bin = bin,
     config_path = config_path,
+    file = file,
     -- Add other parameters as needed
   }
 
@@ -195,13 +202,30 @@ local function build_args(params)
     table.insert(args, "--config=" .. params.config_path)
   end
 
-  local test_name_pattern = ".*"
+  local test_name_pattern = ""
   if params.ns_name ~= "" and params.ns_name ~= nil then
     test_name_pattern = "^ " .. escape_test_pattern(params.ns_name)
   end
 
   if params.test_name ~= "" and params.test_name ~= nil then
-    test_name_pattern = escape_test_pattern(params.test_name) .. "$"
+    if test_name_pattern ~= "" then
+      test_name_pattern = test_name_pattern .. " "
+    else
+      test_name_pattern = "^ "
+    end
+    test_name_pattern = test_name_pattern .. escape_test_pattern(params.test_name) .. "$"
+  else
+    if test_name_pattern ~= "" then
+      test_name_pattern = test_name_pattern .. " .*$"
+    end
+  end
+
+  if test_name_pattern == "" then
+    test_name_pattern = ".*"
+  end
+
+  if params.file ~= "" and params.file ~= nil then
+    file = params.file
   end
 
   vim.list_extend(args, {
@@ -209,7 +233,9 @@ local function build_args(params)
     "--silent=false",
     "--reporter=verbose",
     "--color",
-    "--testNamePattern=" .. test_name_pattern,
+    "--testNamePattern",
+    test_name_pattern,
+    file,
   })
 
   return args
