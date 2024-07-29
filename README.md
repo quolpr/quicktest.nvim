@@ -45,8 +45,8 @@ qt.setup({
   },
   -- split or popup mode, when argument not specified
   default_win_mode = "split",
-  -- Baleia make coloured output. Requires baleia package
-  use_baleia = true
+  -- Baleia make coloured output. Requires baleia package. Can cause crashes https://github.com/quolpr/quicktest.nvim/issues/11
+  use_baleia = false
 })
 
 -- Find nearest test under cursor and run in popup
@@ -107,8 +107,8 @@ qt.setup({
   },
   -- split or popup mode, when argument not specified
   default_win_mode = "split",
-  -- Baleia make coloured output. Requires baleia package
-  use_baleia = true
+  -- Baleia make coloured output. Requires baleia package. Can cause crashes https://github.com/quolpr/quicktest.nvim/issues/11
+  use_baleia = false
 })
 
 vim.keymap.set("n", "<leader>tl", qt.run_line, {
@@ -170,14 +170,14 @@ Using Lazy:
       },
       -- split or popup mode, when argument not specified
       default_win_mode = "split",
-      -- Baleia make coloured output. Requires baleia package
-      use_baleia = true
+      -- Baleia make coloured output. Requires baleia package. Can cause crashes https://github.com/quolpr/quicktest.nvim/issues/11
+      use_baleia = false
     })
   end,
   dependencies = {
     "nvim-lua/plenary.nvim",
     "MunifTanjim/nui.nvim",
-    "m00qek/baleia.nvim",
+    -- "m00qek/baleia.nvim",
   },
   keys = {
     {
