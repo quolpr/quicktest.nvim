@@ -35,11 +35,11 @@ local function escape_test_pattern(s)
       :gsub("%$", "%\\$")
       :gsub("%^", "%\\^")
       :gsub("%/", "%\\/")
-      :gsub("%%s", ".*") -- Match `test.each([...])("Test %s", ...)`
   )
 end
 
 local playwright_config_pattern = fs.root_pattern("{playwright}.config.{js,ts,mjs,mts}")
+
 ---@param path string
 ---@return string|nil
 local function get_playwright_config(path)
@@ -49,11 +49,9 @@ local function get_playwright_config(path)
     return nil
   end
 
-  -- Ordered by config precedence (https://playwright.dev/config/#configuration)
   local possiblePlaywrightConfigNames = {
     "playwright.config.ts",
     "playwright.config.js",
-    -- `.mts,.mjs` are sometimes needed (https://vitejs.dev/guide/migration.html#deprecate-cjs-node-api)
     "playwright.config.mts",
     "playwright.config.mjs",
   }
@@ -85,8 +83,8 @@ local function find_bin(cwd)
 end
 
 local function find_cwd(bufnr)
-  local buffer_name = vim.api.nvim_buf_get_name(bufnr) -- Get the current buffer's file path
-  local path = vim.fn.fnamemodify(buffer_name, ":p:h") -- Get the full path of the directory containing the file
+  local buffer_name = vim.api.nvim_buf_get_name(bufnr)
+  local path = vim.fn.fnamemodify(buffer_name, ":p:h")
 
   return fs.find_ancestor_of_file(path, "package.json")
 end
@@ -113,7 +111,7 @@ M.build_line_run_params = function(bufnr, cursor_pos)
     or get_playwright_config(cwd)
     or "playwright.config.js"
 
-  local file = vim.api.nvim_buf_get_name(bufnr) -- Get the current buffer's file path
+  local file = vim.api.nvim_buf_get_name(bufnr)
 
   local params = {
     ns_name = ts.get_current_test_name(q, bufnr, cursor_pos, "namespace"),
@@ -122,7 +120,6 @@ M.build_line_run_params = function(bufnr, cursor_pos)
     cwd = cwd,
     bin = bin,
     config_path = config_path,
-    -- Add other parameters as needed
   }
   return params, nil
 end
@@ -176,14 +173,13 @@ M.build_file_run_params = function(bufnr, cursor_pos)
     or get_playwright_config(cwd)
     or "playwright.config.js"
 
-  local file = vim.api.nvim_buf_get_name(bufnr) -- Get the current buffer's file path
+  local file = vim.api.nvim_buf_get_name(bufnr) 
 
   local params = {
     cwd = cwd,
     bin = bin,
     config_path = config_path,
     file = file,
-    -- Add other parameters as needed
   }
 
   return params, nil
@@ -193,11 +189,9 @@ end
 local function build_args(params)
   local args = { "test" }
 
-  -- The Playwright test name is constructed like this: `<path> <describe> ... <describe> <test>`
-  -- Parts are separated by spaces. See https://playwright.dev/docs/test-cli
   local test_name_pattern = ""
   if params.ns_name ~= "" and params.ns_name ~= nil then
-    test_name_pattern = " " .. escape_test_pattern(params.ns_name)
+    test_name_pattern = escape_test_pattern(params.ns_name)
   end
 
   if params.test_name ~= "" and params.test_name ~= nil then
@@ -221,7 +215,6 @@ local function build_args(params)
     vim.list_extend(args, { "-g", test_name_pattern })
   end
   vim.list_extend(args, { file })
-
   return args
 end
 
@@ -235,7 +228,7 @@ M.run = function(params, send)
 
   local job = Job:new({
     command = params.bin,
-    args = args, -- Modify based on how your test command needs to be structured
+    args = args, 
     cwd = params.cwd,
     on_stdout = function(_, data)
       for k, v in pairs(vim.split(data, "\n")) do
@@ -256,20 +249,6 @@ M.run = function(params, send)
 
   return job.pid
 end
-
--- ---@param params PlaywrightRunParams
--- M.title = function(params)
---   local args = build_args(params)
---
---   return "Running test: " .. table.concat({ unpack(args, 2) }, " ")
--- end
-
--- --- Handles actions to take after the test run, based on the results.
--- ---@param params any
--- ---@param results any
--- M.after_run = function(params, results)
---   -- Implement actions based on the results, such as updating UI or handling errors
--- end
 
 --- Checks if the plugin is enabled for the given buffer.
 ---@param bufnr integer
@@ -305,10 +284,8 @@ end
 
 --- Adapter options.
 setmetatable(M, {
-  ---@param opts GoAdapterOptions
   __call = function(_, opts)
     M.options = opts
-
     return M
   end,
 })
