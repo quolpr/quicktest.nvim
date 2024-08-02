@@ -27,14 +27,37 @@ local qt = require 'quicktest'
 qt.setup({
   adapters = {
     require("quicktest.adapters.golang")({
+      ---@field cwd (fun(bufnr: integer, current: string?): string)?
+      ---@field bin (fun(bufnr: integer, current: string?): string)?
+      ---@field additional_args (fun(bufnr: integer): string[])?
+      ---@field args (fun(bufnr: integer, current: string[]): string[])?
+      ---@field env (fun(bufnr: integer, current: table<string, string>): table<string, string>)?
+      ---@field is_enabled (fun(bufnr: integer, type: RunType, current: boolean): boolean)?
+
       additional_args = function(bufnr) return { '-race', '-count=1' } end
-      -- bin = function(bufnr) return 'go' end
-      -- cwd = function(bufnr) return 'your-cwd' end
+      -- bin = function(bufnr, current) return current end
+      -- cwd = function(bufnr, current) return current end
     }),
     require("quicktest.adapters.vitest")({
-      -- bin = function(bufnr) return 'vitest' end
-      -- cwd = function(bufnr) return bufnr end
-      -- config_path = function(bufnr) return 'vitest.config.js' end
+      ---@class VitestAdapterOptions
+      ---@field cwd (fun(bufnr: integer, current: string?): string)?
+      ---@field bin (fun(bufnr: integer, current: string?): string)?
+      ---@field config_path (fun(bufnr: integer, current: string): string)?
+      ---@field args (fun(bufnr: integer, current: string[]): string[])?
+      ---@field env (fun(bufnr: integer, current: table<string, string>): table<string, string>)?
+      ---@field is_enabled (fun(bufnr: integer, type: RunType, current: boolean): boolean)?
+
+      -- bin = function(bufnr, current) return current end
+      -- cwd = function(bufnr, current) return current end
+      -- config_path = function(bufnr, current) return current end
+    }),
+    require("quicktest.adapters.elixir")({
+      ---@class ElixirAdapterOptions
+      ---@field cwd (fun(bufnr: integer, current: string?): string)?
+      ---@field bin (fun(bufnr: integer, current: string?): string)?
+      ---@field args (fun(bufnr: integer, current: string[]): string[])?
+      ---@field env (fun(bufnr: integer, current: table<string, string>): table<string, string>)?
+      ---@field is_enabled (fun(bufnr: integer, type: RunType, current: boolean): boolean)?
     }),
     require("quicktest.adapters.playwright")({
       -- bin = function(bufnr) return 'playwright' end
@@ -46,12 +69,19 @@ qt.setup({
       builddir = function(bufnr) return "build" end,
       additional_args = function(bufnr) return {'arg1', 'arg2'} end,
     }),
-    require("quicktest.adapters.dart"),
+    require("quicktest.adapters.dart")({
+      ---@class DartAdapterOptions
+      ---@field cwd (fun(bufnr: integer, current: string?): string)?
+      ---@field bin (fun(bufnr: integer, current: string?): string)?
+      ---@field args (fun(bufnr: integer, current: string[]): string[])?
+      ---@field env (fun(bufnr: integer, current: table<string, string>): table<string, string>)?
+      ---@field is_enabled (fun(bufnr: integer, type: RunType, current: boolean): boolean)?
+    }),
   },
   -- split or popup mode, when argument not specified
   default_win_mode = "split",
-  -- Baleia make coloured output. Requires baleia package
-  use_baleia = true
+  -- Baleia make coloured output. Requires baleia package. Can cause crashes https://github.com/quolpr/quicktest.nvim/issues/11
+  use_baleia = false
 })
 
 -- Find nearest test under cursor and run in popup
@@ -117,8 +147,8 @@ qt.setup({
   },
   -- split or popup mode, when argument not specified
   default_win_mode = "split",
-  -- Baleia make coloured output. Requires baleia package
-  use_baleia = true
+  -- Baleia make coloured output. Requires baleia package. Can cause crashes https://github.com/quolpr/quicktest.nvim/issues/11
+  use_baleia = false
 })
 
 vim.keymap.set("n", "<leader>tl", qt.run_line, {
@@ -185,14 +215,14 @@ Using Lazy:
       },
       -- split or popup mode, when argument not specified
       default_win_mode = "split",
-      -- Baleia make coloured output. Requires baleia package
-      use_baleia = true
+      -- Baleia make coloured output. Requires baleia package. Can cause crashes https://github.com/quolpr/quicktest.nvim/issues/11
+      use_baleia = false
     })
   end,
   dependencies = {
     "nvim-lua/plenary.nvim",
     "MunifTanjim/nui.nvim",
-    "m00qek/baleia.nvim",
+    -- "m00qek/baleia.nvim",
   },
   keys = {
     {

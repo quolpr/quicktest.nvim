@@ -4,9 +4,12 @@ local ts = require("quicktest.ts")
 local fs = require("quicktest.fs_utils")
 
 ---@class VitestAdapterOptions
----@field cwd (fun(bufnr: integer): string)?
----@field bin (fun(bufnr: integer): string)?
----@field config_path (fun(bufnr: integer): string)?
+---@field cwd (fun(bufnr: integer, current: string?): string)?
+---@field bin (fun(bufnr: integer, current: string?): string)?
+---@field config_path (fun(bufnr: integer, current: string): string)?
+---@field args (fun(bufnr: integer, current: string[]): string[])?
+---@field env (fun(bufnr: integer, current: table<string, string>): table<string, string>)?
+---@field is_enabled (fun(bufnr: integer, type: RunType, current: boolean): boolean)?
 
 local M = {
   name = "vitest",
@@ -15,7 +18,8 @@ local M = {
 }
 
 ---@class VitestRunParams
----@field func_names string[]
+---@field bufnr integer
+---@field file string?
 ---@field ns_name string
 ---@field test_name string
 ---@field cwd string
@@ -35,6 +39,7 @@ local function escape_test_pattern(s)
       :gsub("%$", "%\\$")
       :gsub("%^", "%\\^")
       :gsub("%/", "%\\/")
+      :gsub("%%s", ".*") -- Match `test.each([...])("Test %s", ...)`
   )
 end
 
@@ -87,11 +92,32 @@ local function find_bin(cwd)
   return nil
 end
 
-local function find_cwd(bufnr)
+---@param bufnr integer
+---@return string?
+M.get_cwd = function(bufnr)
   local buffer_name = vim.api.nvim_buf_get_name(bufnr) -- Get the current buffer's file path
   local path = vim.fn.fnamemodify(buffer_name, ":p:h") -- Get the full path of the directory containing the file
+  local detected_cwd = fs.find_ancestor_of_file(path, "package.json")
 
-  return fs.find_ancestor_of_file(path, "package.json")
+  return M.options.cwd and M.options.cwd(bufnr, detected_cwd) or detected_cwd
+end
+
+---@param cwd string
+---@param bufnr integer
+---@return string?
+M.get_config_path = function(cwd, bufnr)
+  local detected_path = get_vitest_config(cwd) or "vitest.config.js"
+
+  return M.options.config_path and M.options.config_path(bufnr, detected_path) or detected_path
+end
+
+---@param cwd string
+---@param bufnr integer
+---@return string?
+M.get_bin = function(cwd, bufnr)
+  local detected_bin = find_bin(cwd)
+
+  return M.options.bin and M.options.bin(bufnr, detected_bin) or detected_bin
 end
 
 --- Builds parameters for running tests based on buffer number and cursor position.
@@ -100,25 +126,27 @@ end
 ---@param cursor_pos integer[]
 ---@return VitestRunParams | nil, string | nil
 M.build_line_run_params = function(bufnr, cursor_pos)
-  local cwd = M.options.cwd and M.options.cwd(bufnr) or find_cwd(bufnr)
+  local cwd = M.get_cwd(bufnr)
 
   if not cwd then
     return nil, "Failed to find cwd"
   end
 
-  local bin = M.options.bin and M.options.bin(bufnr) or find_bin(cwd)
+  local bin = M.get_bin(cwd, bufnr)
 
   if not bin then
     return nil, "Failed to find vitest binary"
   end
 
-  local config_path = M.options.config_path and M.options.config_path(bufnr)
-    or get_vitest_config(cwd)
-    or "vitest.config.js"
+  local config_path = M.get_config_path(cwd, bufnr)
+
+  local file = vim.api.nvim_buf_get_name(bufnr) -- Get the current buffer's file path
 
   local params = {
+    bufnr = bufnr,
     ns_name = ts.get_current_test_name(q, bufnr, cursor_pos, "namespace"),
     test_name = ts.get_current_test_name(q, bufnr, cursor_pos, "test"),
+    file = file,
     cwd = cwd,
     bin = bin,
     config_path = config_path,
@@ -130,23 +158,22 @@ end
 ---@param bufnr integer
 ---@return VitestRunParams | nil, string | nil
 M.build_all_run_params = function(bufnr)
-  local cwd = M.options.cwd and M.options.cwd(bufnr) or find_cwd(bufnr)
+  local cwd = M.get_cwd(bufnr)
 
   if not cwd then
     return nil, "Failed to find cwd"
   end
 
-  local bin = M.options.bin and M.options.bin(bufnr) or find_bin(cwd)
+  local bin = M.get_bin(cwd, bufnr)
 
   if not bin then
     return nil, "Failed to find vitest binary"
   end
 
-  local config_path = M.options.config_path and M.options.config_path(bufnr)
-    or get_vitest_config(cwd)
-    or "vitest.config.js"
+  local config_path = M.get_config_path(cwd, bufnr)
 
   local params = {
+    bufnr = bufnr,
     cwd = cwd,
     bin = bin,
     config_path = config_path,
@@ -160,26 +187,28 @@ end
 ---@return VitestRunParams | nil, string | nil
 ---@diagnostic disable-next-line: unused-local
 M.build_file_run_params = function(bufnr, cursor_pos)
-  local cwd = M.options.cwd and M.options.cwd(bufnr) or find_cwd(bufnr)
+  local cwd = M.get_cwd(bufnr)
 
   if not cwd then
     return nil, "Failed to find cwd"
   end
 
-  local bin = M.options.bin and M.options.bin(bufnr) or find_bin(cwd)
+  local bin = M.get_bin(cwd, bufnr)
 
   if not bin then
     return nil, "Failed to find vitest binary"
   end
 
-  local config_path = M.options.config_path and M.options.config_path(bufnr)
-    or get_vitest_config(cwd)
-    or "vitest.config.js"
+  local config_path = M.get_config_path(cwd, bufnr)
+
+  local file = vim.api.nvim_buf_get_name(bufnr) -- Get the current buffer's file path
 
   local params = {
+    bufnr = bufnr,
     cwd = cwd,
     bin = bin,
     config_path = config_path,
+    file = file,
     -- Add other parameters as needed
   }
 
@@ -189,19 +218,37 @@ end
 ---@param params VitestRunParams
 local function build_args(params)
   local args = {}
+  local file = nil
 
   if fs.path.exists(params.config_path) then
     -- only use config if available
     table.insert(args, "--config=" .. params.config_path)
   end
 
-  local test_name_pattern = ".*"
+  local test_name_pattern = ""
   if params.ns_name ~= "" and params.ns_name ~= nil then
     test_name_pattern = "^ " .. escape_test_pattern(params.ns_name)
   end
 
   if params.test_name ~= "" and params.test_name ~= nil then
-    test_name_pattern = escape_test_pattern(params.test_name) .. "$"
+    if test_name_pattern ~= "" then
+      test_name_pattern = test_name_pattern .. " "
+    else
+      test_name_pattern = "^ "
+    end
+    test_name_pattern = test_name_pattern .. escape_test_pattern(params.test_name) .. "$"
+  else
+    if test_name_pattern ~= "" then
+      test_name_pattern = test_name_pattern .. " .*$"
+    end
+  end
+
+  if test_name_pattern == "" then
+    test_name_pattern = ".*"
+  end
+
+  if params.file ~= "" and params.file ~= nil then
+    file = params.file
   end
 
   vim.list_extend(args, {
@@ -209,7 +256,9 @@ local function build_args(params)
     "--silent=false",
     "--reporter=verbose",
     "--color",
-    "--testNamePattern=" .. test_name_pattern,
+    "--testNamePattern",
+    test_name_pattern,
+    file,
   })
 
   return args
@@ -221,10 +270,15 @@ end
 ---@return integer
 M.run = function(params, send)
   local args = build_args(params)
+  local env = vim.fn.environ()
+
+  args = M.options.args and M.options.args(params.bufnr, args) or args
+  env = M.options.env and M.options.env(params.bufnr, env) or env
 
   local job = Job:new({
     command = params.bin,
     args = args, -- Modify based on how your test command needs to be structured
+    env = env,
     cwd = params.cwd,
     on_stdout = function(_, data)
       for k, v in pairs(vim.split(data, "\n")) do
@@ -266,10 +320,9 @@ end
 ---@return boolean
 M.is_enabled = function(bufnr, type)
   local file_path = vim.api.nvim_buf_get_name(bufnr)
+  local is_test_file = false
 
   if type == "line" or type == "file" then
-    local is_test_file = false
-
     if string.match(file_path, "__tests__") then
       is_test_file = true
     end
@@ -283,13 +336,14 @@ M.is_enabled = function(bufnr, type)
       end
     end
     ::matched_pattern::
-    return is_test_file
   else
-    return vim.endswith(file_path, ".ts")
+    is_test_file = vim.endswith(file_path, ".ts")
       or vim.endswith(file_path, ".js")
       or vim.endswith(file_path, ".tsx")
       or vim.endswith(file_path, ".jsx")
   end
+
+  return M.options.is_enabled and M.options.is_enabled(bufnr, type, is_test_file) or is_test_file
 end
 
 --- Adapter options.
