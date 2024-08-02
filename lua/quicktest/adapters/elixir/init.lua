@@ -129,6 +129,7 @@ M.run = function(params, send)
     command = bin,
     args = args, -- Modify based on how your test command needs to be structured
     cwd = params.cwd,
+    env = env,
     on_stdout = function(_, data)
       for k, v in pairs(vim.split(data, "\n")) do
         send({ type = "stdout", output = v })
@@ -142,7 +143,6 @@ M.run = function(params, send)
     on_exit = function(_, return_val)
       send({ type = "exit", code = return_val })
     end,
-    env = env,
   })
 
   job:start()
