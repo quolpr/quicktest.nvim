@@ -343,7 +343,11 @@ M.is_enabled = function(bufnr, type)
       or vim.endswith(file_path, ".jsx")
   end
 
-  return M.options.is_enabled and M.options.is_enabled(bufnr, type, is_test_file) or is_test_file
+  if M.options.is_enabled == nil then
+    return is_test_file
+  end
+
+  return M.options.is_enabled(bufnr, type, is_test_file)
 end
 
 --- Adapter options.

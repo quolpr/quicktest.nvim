@@ -60,11 +60,22 @@ qt.setup({
       ---@field is_enabled (fun(bufnr: integer, type: RunType, current: boolean): boolean)?
     }),
     require("quicktest.adapters.playwright")({
-      -- bin = function(bufnr) return 'playwright' end
-      -- cwd = function(bufnr) return bufnr end
-      -- config_path = function(bufnr) return 'vplaywright.config.js' end
+      ---@class PlaywrightAdapterOptions
+      ---@field cwd (fun(bufnr: integer, current: string?): string)?
+      ---@field bin (fun(bufnr: integer, current: string?): string)?
+      ---@field config_path (fun(bufnr: integer, current: string): string)?
+      ---@field args (fun(bufnr: integer, current: string[]): string[])?
+      ---@field env (fun(bufnr: integer, current: table<string, string>): table<string, string>)?
+      ---@field is_enabled (fun(bufnr: integer, type: RunType, current: boolean): boolean)?
     }),
-    require("quicktest.adapters.elixir"),
+    require("quicktest.adapters.elixir")({
+      ---@class ElixirAdapterOptions
+      ---@field cwd (fun(bufnr: integer, current: string?): string)?
+      ---@field bin (fun(bufnr: integer, current: string?): string)?
+      ---@field args (fun(bufnr: integer, current: string[]): string[])?
+      ---@field env (fun(bufnr: integer, current: table<string, string>): table<string, string>)?
+      ---@field is_enabled (fun(bufnr: integer, type: RunType, current: boolean): boolean)?
+    }),
     require("quicktest.adapters.criterion")({
       builddir = function(bufnr) return "build" end,
       additional_args = function(bufnr) return {'arg1', 'arg2'} end,
