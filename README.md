@@ -33,6 +33,7 @@ qt.setup({
       ---@field args (fun(bufnr: integer, current: string[]): string[])?
       ---@field env (fun(bufnr: integer, current: table<string, string>): table<string, string>)?
       ---@field is_enabled (fun(bufnr: integer, type: RunType, current: boolean): boolean)?
+
       additional_args = function(bufnr) return { '-race', '-count=1' } end
       -- bin = function(bufnr, current) return current end
       -- cwd = function(bufnr, current) return current end
@@ -50,7 +51,14 @@ qt.setup({
       -- cwd = function(bufnr, current) return current end
       -- config_path = function(bufnr, current) return current end
     }),
-    require("quicktest.adapters.elixir"),
+    require("quicktest.adapters.elixir")({
+      ---@class ElixirAdapterOptions
+      ---@field cwd (fun(bufnr: integer, current: string?): string)?
+      ---@field bin (fun(bufnr: integer, current: string?): string)?
+      ---@field args (fun(bufnr: integer, current: string[]): string[])?
+      ---@field env (fun(bufnr: integer, current: table<string, string>): table<string, string>)?
+      ---@field is_enabled (fun(bufnr: integer, type: RunType, current: boolean): boolean)?
+    }),
     require("quicktest.adapters.criterion")({
       builddir = function(bufnr) return "build" end,
       additional_args = function(bufnr) return {'arg1', 'arg2'} end,
