@@ -21,6 +21,7 @@ local M = {
 ---@field cwd string
 ---@field bin string
 ---@field config_path string
+---@field file string
 
 local function escape_test_pattern(s)
   return (
@@ -173,7 +174,7 @@ M.build_file_run_params = function(bufnr, cursor_pos)
     or get_playwright_config(cwd)
     or "playwright.config.js"
 
-  local file = vim.api.nvim_buf_get_name(bufnr) 
+  local file = vim.api.nvim_buf_get_name(bufnr)
 
   local params = {
     cwd = cwd,
@@ -203,6 +204,7 @@ local function build_args(params)
     test_name_pattern = test_name_pattern .. escape_test_pattern(params.test_name)
   end
 
+  local file = nil
   if params.file ~= "" and params.file ~= nil then
     file = params.file
   end
@@ -224,11 +226,10 @@ end
 ---@return integer
 M.run = function(params, send)
   local args = build_args(params)
-  vim.print(args)
 
   local job = Job:new({
     command = params.bin,
-    args = args, 
+    args = args,
     cwd = params.cwd,
     on_stdout = function(_, data)
       for k, v in pairs(vim.split(data, "\n")) do
