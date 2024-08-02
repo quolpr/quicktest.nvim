@@ -54,9 +54,17 @@ API                                           *my-template-docs-quicktest-api*
           -- cwd = function(bufnr) return 'your-cwd' end
         }),
         require("quicktest.adapters.vitest")({
-          -- bin = function(bufnr) return 'vitest' end
-          -- cwd = function(bufnr) return bufnr end
-          -- config_path = function(bufnr) return 'vitest.config.js' end
+          ---@class VitestAdapterOptions
+          ---@field cwd (fun(bufnr: integer, current: string?): string)?
+          ---@field bin (fun(bufnr: integer, current: string?): string)?
+          ---@field config_path (fun(bufnr: integer, current: string): string)?
+          ---@field args (fun(bufnr: integer, current: string[]): string[])?
+          ---@field env (fun(bufnr: integer, current: table<string, string>): table<string, string>)?
+          ---@field is_enabled (fun(bufnr: integer, type: RunType, current: boolean): boolean)?
+    
+          -- bin = function(bufnr, current) return current end
+          -- cwd = function(bufnr, current) return current end
+          -- config_path = function(bufnr, current) return current end
         }),
         require("quicktest.adapters.elixir"),
         require("quicktest.adapters.criterion")({
