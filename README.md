@@ -2,7 +2,7 @@
 
 Quicktest improves your testing experience in real-time with flexible display options like popups or split windows, customized to your workflow preferences. Key features include identifying the nearest function and triggering its test, rerunning previous tests from any location, and live scrolling of results alongside a running timer for immediate feedback.
 
-Currently supported languages: Go, Typescript/Javascript(vitest), Elixir, Dart, C(criterion). There is also a template in Readme below about how to create own adapter. Should be pretty easy, just shell command execute!
+Currently supported languages: Go, Typescript/Javascript(vitest and Playwright), Elixir, Dart, C(criterion). There is also a template in Readme below about how to create own adapter. Should be pretty easy, just shell command execute!
 
 https://github.com/user-attachments/assets/9fcb3e17-f521-4660-9d9a-d9f763de5a1b
 
@@ -59,6 +59,12 @@ qt.setup({
       ---@field env (fun(bufnr: integer, current: table<string, string>): table<string, string>)?
       ---@field is_enabled (fun(bufnr: integer, type: RunType, current: boolean): boolean)?
     }),
+    require("quicktest.adapters.playwright")({
+      -- bin = function(bufnr) return 'playwright' end
+      -- cwd = function(bufnr) return bufnr end
+      -- config_path = function(bufnr) return 'vplaywright.config.js' end
+    }),
+    require("quicktest.adapters.elixir"),
     require("quicktest.adapters.criterion")({
       builddir = function(bufnr) return "build" end,
       additional_args = function(bufnr) return {'arg1', 'arg2'} end,
@@ -113,7 +119,7 @@ qt.run_previous()
 
 ## Installation
 
-Supported languages: Go, Typescript/Javascript(vitest), C (criterion with meson), Dart<br>
+Supported languages: Go, Typescript/Javascript(vitest and Playwright), C (criterion with meson), Dart<br>
 Feel free to open PR for your language, the plugin API is pretty simple and described in `Building your own plugin` section in this Readme.
 
 Simple configurations:
@@ -126,6 +132,11 @@ qt.setup({
   adapters = {
     require("quicktest.adapters.golang"),
     require("quicktest.adapters.vitest")({
+      -- bin = function(bufnr) return 'vitest' end
+      -- cwd = function(bufnr) return bufnr end
+      -- config_path = function(bufnr) return 'vitest.config.js' end
+    }),
+    require("quicktest.adapters.playwright")({
       -- bin = function(bufnr) return 'vitest' end
       -- cwd = function(bufnr) return bufnr end
       -- config_path = function(bufnr) return 'vitest.config.js' end
@@ -192,6 +203,11 @@ Using Lazy:
           -- bin = function(bufnr) return 'vitest' end
           -- cwd = function(bufnr) return bufnr end
           -- config_path = function(bufnr) return 'vitest.config.js' end
+        }),
+        require("quicktest.adapters.playwright")({
+          -- bin = function(bufnr) return 'playwright' end
+          -- cwd = function(bufnr) return bufnr end
+          -- config_path = function(bufnr) return 'playwright.config.js' end
         }),
         require("quicktest.adapters.elixir"),
         require("quicktest.adapters.criterion"),
