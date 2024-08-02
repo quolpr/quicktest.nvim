@@ -4,9 +4,12 @@ local fs = require("quicktest.fs_utils")
 local Job = require("plenary.job")
 
 ---@class GoAdapterOptions
----@field cwd (fun(bufnr: integer): string)?
----@field bin (fun(bufnr: integer): string)?
+---@field cwd (fun(bufnr: integer, current: string?): string)?
+---@field bin (fun(bufnr: integer, current: string?): string)?
 ---@field additional_args (fun(bufnr: integer): string[])?
+---@field args (fun(bufnr: integer, current: string[]): string[])?
+---@field env (fun(bufnr: integer, current: table<string, string>): table<string, string>)?
+---@field is_enabled (fun(bufnr: integer, type: RunType, current: boolean): boolean)?
 
 local M = {
   name = "go",
@@ -61,13 +64,27 @@ end
 ---@field cursor_pos integer[]
 
 ---@param bufnr integer
+---@return string
+M.get_cwd = function(bufnr)
+  local current = find_cwd(bufnr) or vim.fn.getcwd()
+
+  return M.options.cwd and M.options.cwd(bufnr, current) or current
+end
+
+M.get_bin = function(bufnr)
+  local current = "go"
+
+  return M.options.bin and M.options.bin(bufnr, current) or current
+end
+
+---@param bufnr integer
 ---@param cursor_pos integer[]
 ---@return GoRunParams | nil, string | nil
 M.build_file_run_params = function(bufnr, cursor_pos)
-  local func_names = ts.get_func_names(bufnr)
-  local cwd = M.options.cwd and M.options.cwd(bufnr) or find_cwd(bufnr) or vim.fn.getcwd()
+  local cwd = M.get_cwd(bufnr)
   local module = get_module_path(cwd, bufnr) or "."
 
+  local func_names = ts.get_func_names(bufnr)
   if not func_names or #func_names == 0 then
     return nil, "No tests to run"
   end
@@ -94,7 +111,7 @@ M.build_line_run_params = function(bufnr, cursor_pos)
   if sub_name then
     sub_func_names = { sub_name }
   end
-  local cwd = M.options.cwd and M.options.cwd(bufnr) or find_cwd(bufnr) or vim.fn.getcwd()
+  local cwd = M.get_cwd(bufnr)
   local module = get_module_path(cwd, bufnr) or "."
 
   if not func_names or #func_names == 0 then
@@ -116,7 +133,7 @@ end
 ---@param cursor_pos integer[]
 ---@return GoRunParams | nil, string | nil
 M.build_all_run_params = function(bufnr, cursor_pos)
-  local cwd = M.options.cwd and M.options.cwd(bufnr) or find_cwd(bufnr) or vim.fn.getcwd()
+  local cwd = M.get_cwd(bufnr)
   local module = "./..."
 
   return {
@@ -134,7 +151,7 @@ end
 ---@param cursor_pos integer[]
 ---@return GoRunParams | nil, string | nil
 M.build_dir_run_params = function(bufnr, cursor_pos)
-  local cwd = M.options.cwd and M.options.cwd(bufnr) or find_cwd(bufnr) or vim.fn.getcwd()
+  local cwd = M.get_cwd(bufnr)
   local module = get_module_path(cwd, bufnr) or "."
 
   return {
@@ -158,10 +175,18 @@ M.run = function(params, send)
     params.sub_func_names,
     M.options.additional_args and M.options.additional_args(params.bufnr) or {}
   )
+  args = M.options.args and M.options.args(params.bufnr, args) or args
+
+  local bin = M.get_bin(params.bufnr)
+  bin = M.options.bin and M.options.bin(params.bufnr, bin) or bin
+
+  local env = vim.fn.environ()
+  env = M.options.env and M.options.env(params.bufnr, env) or env
 
   local job = Job:new({
-    command = M.options.bin and M.options.bin(params.bufnr) or "go",
+    command = bin,
     args = args,
+    env = env,
     cwd = params.cwd,
     on_stdout = function(_, data)
       --- @type GoLogEntry
@@ -196,6 +221,7 @@ M.title = function(params)
     params.sub_func_names,
     M.options.additional_args and M.options.additional_args(params.bufnr) or {}
   )
+  args = M.options.args and M.options.args(params.bufnr, args) or args
 
   return "Running test: " .. table.concat({ unpack(args, 2) }, " ")
 end
@@ -235,11 +261,14 @@ end
 ---@return boolean
 M.is_enabled = function(bufnr, type)
   local bufname = vim.api.nvim_buf_get_name(bufnr)
+  local is_test_file = false
   if type == "line" or type == "file" then
-    return vim.endswith(bufname, "_test.go")
+    is_test_file = vim.endswith(bufname, "_test.go")
   else
-    return vim.endswith(bufname, ".go")
+    is_test_file = vim.endswith(bufname, ".go")
   end
+
+  return M.options.is_enabled and M.options.is_enabled(bufnr, type, is_test_file) or is_test_file
 end
 
 --- Adapter options.
