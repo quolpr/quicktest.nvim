@@ -201,14 +201,12 @@ M.title = function(params)
     return "Running all tests from " .. params.builddir
   end
 
-  local args = table.concat(
-    criterion.make_test_args(
-      params.test.test_suite,
-      params.test.test_name,
-      M.options.additional_args and M.options.additional_args(params.bufnr) or {}
-    ),
-    " "
-  )
+  local additional_args = M.options.additional_args and M.options.additional_args(params.bufnr) or {}
+  additional_args = params.opts.additional_args and vim.list_extend(additional_args, params.opts.additional_args)
+    or additional_args
+
+  local args =
+    table.concat(criterion.make_test_args(params.test.test_suite, params.test.test_name, additional_args), " ")
 
   return "Running " .. params.test_exe .. " " .. args
 end

@@ -223,12 +223,10 @@ M.run = function(params, send)
 end
 
 M.title = function(params)
-  local args = cmd.build_args(
-    params.module,
-    params.func_names,
-    params.sub_func_names,
-    M.options.additional_args and M.options.additional_args(params.bufnr) or {}
-  )
+  local additional_args = M.options.additional_args and M.options.additional_args(params.bufnr) or {}
+  additional_args = params.opts.additional_args and vim.list_extend(additional_args, params.opts.additional_args)
+
+  local args = cmd.build_args(params.module, params.func_names, params.sub_func_names, additional_args)
   args = M.options.args and M.options.args(params.bufnr, args) or args
 
   return "Running test: " .. table.concat({ unpack(args, 2) }, " ")
