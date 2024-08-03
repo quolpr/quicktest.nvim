@@ -68,9 +68,6 @@ local function open_split()
   -- mount/open the component
   split:mount()
 
-  vim.api.nvim_win_set_option(split.winid, "statusline", "")
-  vim.api.nvim_win_set_option(split.winid, "laststatus", 0)
-
   M.is_split_opened = true
 
   return split
@@ -88,7 +85,7 @@ local function try_open_popup()
   end
 end
 
-----@param mode win_mode
+---@param mode WinModeWithoutAuto
 function M.try_open_win(mode)
   if mode == "popup" then
     try_open_popup()
@@ -97,7 +94,7 @@ function M.try_open_win(mode)
   end
 end
 
-----@param mode win_mode
+---@param mode WinModeWithoutAuto
 function M.try_close_win(mode)
   if mode == "popup" then
     if popup then
@@ -110,7 +107,7 @@ function M.try_close_win(mode)
   end
 end
 
---- @param buf number
+---@param buf number
 function M.scroll_down(buf)
   local windows = vim.api.nvim_list_wins()
   for _, win in ipairs(windows) do
@@ -127,6 +124,7 @@ function M.scroll_down(buf)
   end
 end
 
+---@param buf number
 function M.should_continue_scroll(buf)
   local windows = vim.api.nvim_list_wins()
   for _, win in ipairs(windows) do

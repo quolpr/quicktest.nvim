@@ -62,6 +62,7 @@ end
 ---@field module string
 ---@field bufnr integer
 ---@field cursor_pos integer[]
+---@field opts AdapterRunOpts
 
 ---@param bufnr integer
 ---@return string
@@ -79,8 +80,9 @@ end
 
 ---@param bufnr integer
 ---@param cursor_pos integer[]
+---@param opts AdapterRunOpts
 ---@return GoRunParams | nil, string | nil
-M.build_file_run_params = function(bufnr, cursor_pos)
+M.build_file_run_params = function(bufnr, cursor_pos, opts)
   local cwd = M.get_cwd(bufnr)
   local module = get_module_path(cwd, bufnr) or "."
 
@@ -96,14 +98,16 @@ M.build_file_run_params = function(bufnr, cursor_pos)
     module = module,
     bufnr = bufnr,
     cursor_pos = cursor_pos,
+    opts = opts,
   },
     nil
 end
 
 ---@param bufnr integer
 ---@param cursor_pos integer[]
+---@param opts AdapterRunOpts
 ---@return GoRunParams | nil, string | nil
-M.build_line_run_params = function(bufnr, cursor_pos)
+M.build_line_run_params = function(bufnr, cursor_pos, opts)
   local func_names = ts.get_nearest_func_names(bufnr, cursor_pos)
   local sub_name = ts.get_sub_testcase_name(bufnr, cursor_pos)
   --- @type string[]
@@ -125,14 +129,16 @@ M.build_line_run_params = function(bufnr, cursor_pos)
     module = module,
     bufnr = bufnr,
     cursor_pos = cursor_pos,
+    opts = opts,
   },
     nil
 end
 
 ---@param bufnr integer
 ---@param cursor_pos integer[]
+---@param opts AdapterRunOpts
 ---@return GoRunParams | nil, string | nil
-M.build_all_run_params = function(bufnr, cursor_pos)
+M.build_all_run_params = function(bufnr, cursor_pos, opts)
   local cwd = M.get_cwd(bufnr)
   local module = "./..."
 
@@ -143,14 +149,16 @@ M.build_all_run_params = function(bufnr, cursor_pos)
     module = module,
     bufnr = bufnr,
     cursor_pos = cursor_pos,
+    opts = opts,
   },
     nil
 end
 
 ---@param bufnr integer
 ---@param cursor_pos integer[]
+---@param opts AdapterRunOpts
 ---@return GoRunParams | nil, string | nil
-M.build_dir_run_params = function(bufnr, cursor_pos)
+M.build_dir_run_params = function(bufnr, cursor_pos, opts)
   local cwd = M.get_cwd(bufnr)
   local module = get_module_path(cwd, bufnr) or "."
 
@@ -161,6 +169,7 @@ M.build_dir_run_params = function(bufnr, cursor_pos)
     module = module,
     bufnr = bufnr,
     cursor_pos = cursor_pos,
+    opts = opts,
   },
     nil
 end
@@ -169,12 +178,11 @@ end
 ---@param send fun(data: CmdData)
 ---@return integer
 M.run = function(params, send)
-  local args = cmd.build_args(
-    params.module,
-    params.func_names,
-    params.sub_func_names,
-    M.options.additional_args and M.options.additional_args(params.bufnr) or {}
-  )
+  local additional_args = M.options.additional_args and M.options.additional_args(params.bufnr) or {}
+  additional_args = params.opts.additional_args and vim.list_extend(additional_args, params.opts.additional_args)
+    or additional_args
+
+  local args = cmd.build_args(params.module, params.func_names, params.sub_func_names, additional_args)
   args = M.options.args and M.options.args(params.bufnr, args) or args
 
   local bin = M.get_bin(params.bufnr)

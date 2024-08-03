@@ -25,6 +25,7 @@ local M = {
 ---@field cwd string
 ---@field bin string
 ---@field config_path string
+---@field opts AdapterRunOpts
 
 local function escape_test_pattern(s)
   return (
@@ -124,8 +125,9 @@ end
 --- This function should be customized to extract necessary information from the buffer.
 ---@param bufnr integer
 ---@param cursor_pos integer[]
+---@param opts AdapterRunOpts
 ---@return VitestRunParams | nil, string | nil
-M.build_line_run_params = function(bufnr, cursor_pos)
+M.build_line_run_params = function(bufnr, cursor_pos, opts)
   local cwd = M.get_cwd(bufnr)
 
   if not cwd then
@@ -150,14 +152,17 @@ M.build_line_run_params = function(bufnr, cursor_pos)
     cwd = cwd,
     bin = bin,
     config_path = config_path,
+    opts = opts,
     -- Add other parameters as needed
   }
   return params, nil
 end
 
 ---@param bufnr integer
+---@param cursor_pos integer[]
+---@param opts AdapterRunOpts
 ---@return VitestRunParams | nil, string | nil
-M.build_all_run_params = function(bufnr)
+M.build_all_run_params = function(bufnr, cursor_pos, opts)
   local cwd = M.get_cwd(bufnr)
 
   if not cwd then
@@ -177,6 +182,7 @@ M.build_all_run_params = function(bufnr)
     cwd = cwd,
     bin = bin,
     config_path = config_path,
+    opts = opts,
     -- Add other parameters as needed
   }
   return params, nil
@@ -184,9 +190,10 @@ end
 
 ---@param bufnr integer
 ---@param cursor_pos integer[]
+---@param opts AdapterRunOpts
 ---@return VitestRunParams | nil, string | nil
 ---@diagnostic disable-next-line: unused-local
-M.build_file_run_params = function(bufnr, cursor_pos)
+M.build_file_run_params = function(bufnr, cursor_pos, opts)
   local cwd = M.get_cwd(bufnr)
 
   if not cwd then
@@ -209,6 +216,7 @@ M.build_file_run_params = function(bufnr, cursor_pos)
     bin = bin,
     config_path = config_path,
     file = file,
+    opts = opts,
     -- Add other parameters as needed
   }
 
@@ -272,6 +280,7 @@ M.run = function(params, send)
   local args = build_args(params)
   local env = vim.fn.environ()
 
+  args = params.opts.additional_args and vim.list_extend(args, params.opts.additional_args) or args
   args = M.options.args and M.options.args(params.bufnr, args) or args
   env = M.options.env and M.options.env(params.bufnr, env) or env
 

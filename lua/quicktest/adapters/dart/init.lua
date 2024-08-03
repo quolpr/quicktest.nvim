@@ -121,6 +121,7 @@ local M = {
 ---@field cursor_pos integer[]
 ---@field path string
 ---@field cwd string
+---@field opts AdapterRunOpts
 
 --- @param bufnr integer
 --- @return string | nil
@@ -133,8 +134,9 @@ end
 
 ---@param bufnr integer
 ---@param cursor_pos integer[]
+---@param opts AdapterRunOpts
 ---@return DartRunParams | nil, nil | string
-M.build_line_run_params = function(bufnr, cursor_pos)
+M.build_line_run_params = function(bufnr, cursor_pos, opts)
   local filepath = vim.api.nvim_buf_get_name(bufnr)
 
   local cwd = M.get_cwd(bufnr)
@@ -153,14 +155,16 @@ M.build_line_run_params = function(bufnr, cursor_pos)
     func_name = testname,
     path = filepath,
     cwd = cwd,
+    opts = opts,
   },
     nil
 end
 
 ---@param bufnr integer
 ---@param cursor_pos integer[]
+---@param opts AdapterRunOpts
 ---@return DartRunParams | nil, nil | string
-M.build_file_run_params = function(bufnr, cursor_pos)
+M.build_file_run_params = function(bufnr, cursor_pos, opts)
   local filepath = vim.api.nvim_buf_get_name(bufnr)
   local cwd = M.get_cwd(bufnr)
   if cwd == nil then
@@ -172,13 +176,15 @@ M.build_file_run_params = function(bufnr, cursor_pos)
     cursor_pos = cursor_pos,
     path = filepath,
     cwd = cwd,
+    opts = opts,
   }, nil
 end
 
 ---@param bufnr integer
 ---@param cursor_pos integer[]
+---@param opts AdapterRunOpts
 ---@return DartRunParams | nil, nil | string
-M.build_dir_run_params = function(bufnr, cursor_pos)
+M.build_dir_run_params = function(bufnr, cursor_pos, opts)
   local filepath = vim.api.nvim_buf_get_name(bufnr)
   local cwd = M.get_cwd(bufnr)
   if cwd == nil then
@@ -191,13 +197,15 @@ M.build_dir_run_params = function(bufnr, cursor_pos)
     cursor_pos = cursor_pos,
     path = folder,
     cwd = cwd,
+    opts = opts,
   }, nil
 end
 
 ---@param bufnr integer
 ---@param cursor_pos integer[]
+---@param opts AdapterRunOpts
 ---@return DartRunParams | nil, nil | string
-M.build_all_run_params = function(bufnr, cursor_pos)
+M.build_all_run_params = function(bufnr, cursor_pos, opts)
   local filepath = vim.api.nvim_buf_get_name(bufnr)
   local cwd = M.get_cwd(bufnr)
   if cwd == nil then
@@ -209,6 +217,7 @@ M.build_all_run_params = function(bufnr, cursor_pos)
     cursor_pos = cursor_pos,
     path = "",
     cwd = cwd,
+    opts = opts,
   }, nil
 end
 
@@ -227,6 +236,7 @@ M.run = function(params, send)
   table.insert(args, "-r")
   table.insert(args, "github")
 
+  args = params.opts.additional_args and vim.list_extend(args, params.opts.additional_args) or args
   args = M.options.args and M.options.args(params.bufnr, args) or args
 
   local bin = "flutter"

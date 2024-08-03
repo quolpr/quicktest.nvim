@@ -23,6 +23,7 @@ local M = {
 ---@field cwd string
 ---@field pos number
 ---@field mode 'all' | 'dir' | 'file' | 'line'
+---@field opts AdapterRunOpts
 
 --- @param bufnr integer
 --- @return string | nil
@@ -41,8 +42,9 @@ end
 
 ---@param bufnr integer
 ---@param cursor_pos integer[]
+---@param opts AdapterRunOpts
 ---@return ElixirRunParams | nil, string | nil
-M.build_line_run_params = function(bufnr, cursor_pos)
+M.build_line_run_params = function(bufnr, cursor_pos, opts)
   local file = vim.api.nvim_buf_get_name(bufnr) -- Get the current buffer's file path
   local cwd = M.get_cwd(bufnr)
 
@@ -64,13 +66,16 @@ M.build_line_run_params = function(bufnr, cursor_pos)
     mode = "line",
     pos = pos,
     cwd = cwd,
+    opts = opts,
   },
     nil
 end
 
 ---@param bufnr integer
+---@param cursor_pos integer[]
+---@param opts AdapterRunOpts
 ---@return ElixirRunParams | nil, string | nil
-M.build_file_run_params = function(bufnr)
+M.build_file_run_params = function(bufnr, cursor_pos, opts)
   local file = vim.api.nvim_buf_get_name(bufnr) -- Get the current buffer's file path
   local cwd = M.get_cwd(bufnr)
 
@@ -80,13 +85,16 @@ M.build_file_run_params = function(bufnr)
     file = file,
     mode = "file",
     cwd = cwd,
-  }, nil
+    opts = opts,
+  },
+    nil
 end
 
 ---@param bufnr integer
 ---@param cursor_pos integer[]
+---@param opts AdapterRunOpts
 ---@return ElixirRunParams | nil, string | nil
-M.build_all_run_params = function(bufnr, cursor_pos)
+M.build_all_run_params = function(bufnr, cursor_pos, opts)
   local cwd = M.get_cwd(bufnr)
 
   return {
@@ -94,6 +102,7 @@ M.build_all_run_params = function(bufnr, cursor_pos)
     func_names = {},
     cwd = cwd,
     mode = "all",
+    opts = opts,
   }, nil
 end
 
@@ -117,6 +126,7 @@ M.run = function(params, send)
     table.insert(args, f)
   end
 
+  args = params.opts.additional_args and vim.list_extend(args, params.opts.additional_args) or args
   args = M.options.args and M.options.args(params.bufnr, args) or args
 
   local bin = "mix"

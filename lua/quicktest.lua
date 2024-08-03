@@ -19,47 +19,55 @@ M.setup = function(args)
 end
 
 M.current_win_mode = function()
-  return module.current_win_mode()
+  return module.current_win_mode(M.config.default_win_mode)
 end
 
---- @param mode WinMode
+--- @param mode WinModeWithoutAuto
 M.open_win = function(mode)
   return module.try_open_win(mode)
 end
 
---- @param mode WinMode
+--- @param mode WinModeWithoutAuto
 M.close_win = function(mode)
   return module.try_close_win(mode)
 end
 
---- @param mode WinMode?
+--- @param mode WinModeWithoutAuto
 M.toggle_win = function(mode)
   return module.toggle_win(mode)
 end
 
 --- @param mode WinMode?
 M.run_previous = function(mode)
-  return module.run_previous(M.config, mode)
+  return module.run_previous(M.config, mode or "auto")
 end
 
 --- @param mode WinMode?
-M.run_line = function(mode)
-  return module.prepare_and_run(M.config, "line", mode)
+--- @param adapter Adapter?
+--- @param opts AdapterRunOpts?
+M.run_line = function(mode, adapter, opts)
+  return module.prepare_and_run(M.config, "line", mode or "auto", adapter or "auto", opts or {})
 end
 
 --- @param mode WinMode?
-M.run_file = function(mode)
-  return module.prepare_and_run(M.config, "file", mode)
+--- @param adapter Adapter?
+--- @param opts AdapterRunOpts?
+M.run_file = function(mode, adapter, opts)
+  return module.prepare_and_run(M.config, "file", mode or "auto", adapter or "auto", opts or {})
 end
 
 --- @param mode WinMode?
-M.run_dir = function(mode)
-  return module.prepare_and_run(M.config, "dir", mode)
+--- @param adapter Adapter?
+--- @param opts AdapterRunOpts?
+M.run_dir = function(mode, adapter, opts)
+  return module.prepare_and_run(M.config, "dir", mode or "auto", adapter or "auto", opts or {})
 end
 
 --- @param mode WinMode?
-M.run_all = function(mode)
-  return module.prepare_and_run(M.config, "all", mode)
+--- @param adapter Adapter?
+--- @param opts AdapterRunOpts?
+M.run_all = function(mode, adapter, opts)
+  return module.prepare_and_run(M.config, "all", mode or "auto", adapter or "auto", opts or {})
 end
 
 M.cancel_current_run = function()

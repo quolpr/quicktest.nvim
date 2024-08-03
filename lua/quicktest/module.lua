@@ -6,7 +6,12 @@ local ui = require("quicktest.ui")
 
 local M = {}
 
----@alias WinMode 'popup' | 'split'
+---@alias Adapter string | "auto"
+---@alias WinMode 'popup' | 'split' | 'auto'
+---@alias WinModeWithoutAuto 'popup' | 'split
+
+---@class AdapterRunOpts
+---@field additional_args string[]?
 
 ---@alias CmdData {type: 'stdout', raw: string, output: string?, decoded: any} | {type: 'stderr', raw: string, output: string?, decoded: any} | {type: 'exit', code: number}
 
@@ -14,17 +19,18 @@ local M = {}
 
 ---@class QuicktestAdapter
 ---@field name string
----@field build_line_run_params fun(bufnr: integer, cursor_pos: integer[]): any
----@field build_file_run_params fun(bufnr: integer, cursor_pos: integer[]): any
----@field can_run fun(params: any)
----@field run fun(params: GoRunParams, send: fun(data: CmdData)): number
----@field after_run fun(params: GoRunParams, results: CmdData)?
----@field title fun(params: GoRunParams): string
+---@field build_line_run_params fun(bufnr: integer, cursor_pos: integer[], opts: AdapterRunOpts): any
+---@field build_file_run_params fun(bufnr: integer, cursor_pos: integer[], opts: AdapterRunOpts): any
+---@field build_dir_run_params fun(bufnr: integer, cursor_pos: integer[], opts: AdapterRunOpts): any
+---@field build_all_run_params fun(bufnr: integer, cursor_pos: integer[], opts: AdapterRunOpts): any
+---@field run fun(params: any, send: fun(data: CmdData)): number
+---@field after_run fun(params: any, results: CmdData)?
+---@field title fun(params: any): string
 ---@field is_enabled fun(bufnr: number, type: RunType): boolean
 
 ---@class QuicktestConfig
 ---@field adapters QuicktestAdapter[]
----@field default_win_mode WinMode
+---@field default_win_mode WinModeWithoutAuto
 ---@field use_baleia boolean
 
 --- @type {id: number, started_at: number, pid: number?} | nil
@@ -62,8 +68,9 @@ end
 
 --- @param adapter QuicktestAdapter
 --- @param params any
---- @params config QuicktestConfig
-function M.run(adapter, params, config)
+--- @param config QuicktestConfig
+--- @param opts AdapterRunOpts
+function M.run(adapter, params, config, opts)
   if current_job then
     if current_job.pid then
       vim.system({ "kill", tostring(current_job.pid) }):wait()
@@ -94,7 +101,7 @@ function M.run(adapter, params, config)
   --- @type {id: number, started_at: number, pid: number?, exit_code: number?}
   local job = { id = math.random(10000000000000000), started_at = vim.uv.now() }
   current_job = job
-  previous_run = { adapter = adapter, params = params }
+  previous_run = { adapter = adapter, params = params, opts = opts }
 
   local is_running = function()
     return current_job and job.id == current_job.id
@@ -234,14 +241,16 @@ end
 --- @param config QuicktestConfig
 --- @param type 'line' | 'file' | 'dir' | 'all'
 --- @param mode WinMode?
-function M.prepare_and_run(config, type, mode)
-  mode = mode or M.current_win_mode(config.default_win_mode)
+--- @param adapter_name Adapter?
+--- @param opts AdapterRunOpts
+function M.prepare_and_run(config, type, mode, adapter_name, opts)
+  local win_mode = mode == "auto" and M.current_win_mode(config.default_win_mode) or mode --[[@as WinModeWithoutAuto]]
   local current_buffer = api.nvim_get_current_buf()
   local win = vim.api.nvim_get_current_win() -- Get the current active window
   local cursor_pos = vim.api.nvim_win_get_cursor(win) -- Get the cursor position in the window
 
   --- @type QuicktestAdapter
-  local adapter = get_adapter(config, type)
+  local adapter = adapter_name == "auto" and get_adapter(config, type) or config.adapters[adapter_name]
 
   if not adapter then
     return notify.warn("Failed to test: no suitable adapter found.")
@@ -253,29 +262,29 @@ function M.prepare_and_run(config, type, mode)
     return notify.warn("Failed to test: adapter '" .. adapter.name .. "' does not support '" .. type .. "' run.")
   end
 
-  local params, error = method(current_buffer, cursor_pos)
+  local params, error = method(current_buffer, cursor_pos, opts)
 
   if error ~= nil and error ~= "" then
     return notify.warn("Failed to test: " .. error .. ".")
   end
 
-  M.try_open_win(mode)
+  M.try_open_win(win_mode)
 
-  M.run(adapter, params, config)
+  M.run(adapter, params, config, opts)
 end
 
 --- @param config QuicktestConfig
 --- @param mode WinMode?
 function M.run_previous(config, mode)
-  mode = mode or M.current_win_mode(config.default_win_mode)
+  local win_mode = mode == "auto" and M.current_win_mode(config.default_win_mode) or mode --[[@as WinModeWithoutAuto]]
 
-  M.try_open_win(mode)
+  M.try_open_win(win_mode)
 
   if not previous_run then
     return notify.warn("No previous run")
   end
 
-  M.run(previous_run.adapter, previous_run.params, config)
+  M.run(previous_run.adapter, previous_run.params, config, previous_run.opts)
 end
 
 function M.kill_current_run()
@@ -296,7 +305,8 @@ function M.kill_current_run()
   end
 end
 
---- @param default_mode WinMode?
+--- @param default_mode WinModeWithoutAuto
+--- @return WinModeWithoutAuto
 function M.current_win_mode(default_mode)
   if ui.is_split_opened then
     return "split"
@@ -307,6 +317,7 @@ function M.current_win_mode(default_mode)
   end
 end
 
+---@param mode WinModeWithoutAuto
 function M.try_open_win(mode)
   ui.try_open_win(mode)
   for _, buf in ipairs(ui.buffers) do
@@ -314,10 +325,12 @@ function M.try_open_win(mode)
   end
 end
 
+---@param mode WinModeWithoutAuto
 function M.try_close_win(mode)
   ui.try_close_win(mode)
 end
 
+---@param mode WinModeWithoutAuto
 function M.toggle_win(mode)
   if mode == "split" then
     if ui.is_split_opened then

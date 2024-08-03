@@ -28,11 +28,13 @@ local M = {
 ---@field cursor_pos integer[]
 ---@field builddir string
 ---@field is_run_all boolean
+---@field opts AdapterRunOpts
 
 ---@param bufnr integer
 ---@param cursor_pos integer[]
+---@param opts AdapterRunOpts
 ---@return CriterionTestParams | nil,  string | nil
-M.build_file_run_params = function(bufnr, cursor_pos)
+M.build_file_run_params = function(bufnr, cursor_pos, opts)
   local builddir = M.options.builddir and M.options.builddir(bufnr) or "build"
   local test_exe = util.get_test_exe_from_buffer(bufnr, builddir)
 
@@ -46,14 +48,16 @@ M.build_file_run_params = function(bufnr, cursor_pos)
     bufnr = bufnr,
     cursor_pos = cursor_pos,
     builddir = builddir,
+    opts = opts,
   },
     nil
 end
 
 ---@param bufnr integer
 ---@param cursor_pos integer[]
+---@param opts AdapterRunOpts
 ---@return CriterionTestParams | nil,  string | nil
-M.build_line_run_params = function(bufnr, cursor_pos)
+M.build_line_run_params = function(bufnr, cursor_pos, opts)
   local line = criterion.get_nearest_test(bufnr, cursor_pos)
 
   if line == "" then
@@ -78,14 +82,16 @@ M.build_line_run_params = function(bufnr, cursor_pos)
     bufnr = bufnr,
     cursor_pos = cursor_pos,
     builddir = builddir,
+    opts = opts,
   },
     nil
 end
 
 ---@param bufnr integer
 ---@param cursor_pos integer[]
+---@param opts AdapterRunOpts
 ---@return CriterionTestParams | nil, string | nil
-function M.build_all_run_params(bufnr, cursor_pos)
+function M.build_all_run_params(bufnr, cursor_pos, opts)
   return {
     test = {},
     test_exe = "",
@@ -93,6 +99,7 @@ function M.build_all_run_params(bufnr, cursor_pos)
     cursor_pos = cursor_pos,
     builddir = M.options.builddir and M.options.builddir(bufnr) or "build",
     is_run_all = true,
+    opts = opts,
   },
     nil
 end
@@ -126,10 +133,13 @@ M.run = function(params, send)
     " "
   )
 
+  local args = { "test", params.test_exe, "-C", params.builddir, "-v", "--test-args=" .. criterion_args }
+  args = params.opts.additional_args and vim.list_extend(args, params.opts.additional_args) or args
+
   --- Run the tests
   local job = Job:new({
     command = "meson",
-    args = { "test", params.test_exe, "-C", params.builddir, "-v", "--test-args=" .. criterion_args },
+    args = args,
     on_stdout = function(_, data)
       local done, report = util.capture_json(data, json)
       if done and report then
