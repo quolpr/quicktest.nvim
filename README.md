@@ -128,6 +128,26 @@ qt.run_previous('split')
 qt.run_previous()
 ```
 
+### Commands
+
+```
+:QuicktestRun[Line/File/Dir/All] <win_mode> <adapter> ...<args>
+```
+
+Examples:
+
+```
+:QuicktestRunLine auto auto --my=arg
+:QuicktestRunLine popup auto --my=arg
+:QuicktestRunLine split auto --my=arg
+:QuicktestRunLine split go --my=arg
+
+
+:QuicktestRunFile split go --my=arg
+:QuicktestRunDir split go --my=arg
+:QuicktestRunAll split go --my=arg
+```
+
 ## Installation
 
 Supported languages: Go, Typescript/Javascript(vitest and Playwright), C (criterion with meson), Dart<br>
@@ -305,6 +325,7 @@ Using Lazy:
   },
 }
 ```
+
 
 
 ## Screenshots

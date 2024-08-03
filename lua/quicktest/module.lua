@@ -56,6 +56,22 @@ local function get_adapter(config, type)
   return adapter
 end
 
+--- @param adapters QuicktestAdapter[]
+--- @param name string
+--- @return QuicktestAdapter
+local function get_adapter_by_name(adapters, name)
+  local adapter
+
+  for _, plug in ipairs(adapters) do
+    if plug.name == name then
+      adapter = plug
+      break
+    end
+  end
+
+  return adapter
+end
+
 local baleia_pkg = nil
 local get_baleia = function()
   if baleia_pkg then
@@ -240,8 +256,8 @@ end
 
 --- @param config QuicktestConfig
 --- @param type 'line' | 'file' | 'dir' | 'all'
---- @param mode WinMode?
---- @param adapter_name Adapter?
+--- @param mode WinMode
+--- @param adapter_name Adapter
 --- @param opts AdapterRunOpts
 function M.prepare_and_run(config, type, mode, adapter_name, opts)
   local win_mode = mode == "auto" and M.current_win_mode(config.default_win_mode) or mode --[[@as WinModeWithoutAuto]]
@@ -250,7 +266,8 @@ function M.prepare_and_run(config, type, mode, adapter_name, opts)
   local cursor_pos = vim.api.nvim_win_get_cursor(win) -- Get the cursor position in the window
 
   --- @type QuicktestAdapter
-  local adapter = adapter_name == "auto" and get_adapter(config, type) or config.adapters[adapter_name]
+  local adapter = adapter_name == "auto" and get_adapter(config, type)
+    or get_adapter_by_name(config.adapters, adapter_name)
 
   if not adapter then
     return notify.warn("Failed to test: no suitable adapter found.")
