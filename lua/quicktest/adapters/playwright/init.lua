@@ -308,7 +308,6 @@ M.is_enabled = function(bufnr, type)
       end
     end
     ::matched_pattern::
-    return is_test_file
   else
     is_test_file = vim.endswith(file_path, ".ts")
       or vim.endswith(file_path, ".js")
