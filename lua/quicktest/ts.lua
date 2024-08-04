@@ -32,7 +32,7 @@ end
 --- Return `true` if the expr matches.
 ---@param expr string
 ---@param bufnr integer
----@return boolean 
+---@return boolean
 function M.matches(expr, bufnr)
   local root = get_root_node(bufnr)
   if not root then
