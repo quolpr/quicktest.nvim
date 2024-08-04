@@ -326,6 +326,39 @@ Using Lazy:
 }
 ```
 
+### Languages with multiple adapters
+
+Same languages like Javascript/Typescript support multiple adapters that might match the same 
+test file. Use the `is_enabled` option to control which adapter should be used for the 
+current buffer.
+
+Some adapters like `playwright` and `vitest` provide a helper function to determine whether
+the current buffer imports from a certain package like `@playwright` or `vitest`. Here is a 
+sample configuration for a project with Playwright and vitest tests:
+
+```lua
+local qt = require("quicktest")
+local playwright = require("quicktest.adapters.playwright")
+local vitest = require("quicktest.adapters.vitest")
+
+qt.setup({
+  adapters = {
+    vitest({
+      is_enabled = function(bufnr)
+        return vitest.imports_from_vitest(bufnr)
+      end
+    }),
+    playwright({
+      is_enabled = function(bufnr)
+        -- In case you are not using the default `@playwright` package but your own
+        -- wrapper, you can specify the package-name that has to be imported
+        return playwright.imports_from_playwright(bufnr, "my-custom-playwright")
+      end
+    }),
+  },
+})
+```
+
 
 
 ## Screenshots
