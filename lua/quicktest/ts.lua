@@ -28,6 +28,24 @@ local function get_root_node(bufnr)
   return tree:root()
 end
 
+--- Test the given Treesitter expression against the given buffer.
+--- Return `true` if the expr matches.
+---@param expr string
+---@param bufnr integer
+---@return boolean
+function M.matches(expr, bufnr)
+  local root = get_root_node(bufnr)
+  if not root then
+    return false
+  end
+
+  local query = vim.treesitter.query.parse(get_buffer_file_type(bufnr), expr)
+  for x in query:iter_matches(root, bufnr) do
+    return true
+  end
+  return false
+end
+
 function M.get_current_test(expr, bufnr, cursor_pos, search_type)
   local root = get_root_node(bufnr)
   if not root then

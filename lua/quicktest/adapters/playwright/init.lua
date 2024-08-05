@@ -322,6 +322,25 @@ M.is_enabled = function(bufnr, type)
   return M.options.is_enabled(bufnr, type, is_test_file)
 end
 
+--- A helper function that uses Treesitter to determine whether the current
+--- buffer imports from the package "@playwright" or the `package` passed in.
+--- Use this together with `is_enabled` to filter non-Playwright tests if
+--- you use this adapter together with other JS/TS adapters like `vitest`.
+---@param bufnr integer
+---@param package string?
+---@return boolean
+M.imports_from_playwright = function(bufnr, package)
+  if package == nil then
+    package = "@playwright"
+  end
+  local expr = [[
+      ((import_statement
+        source: (string) @source (#contains? @source "]] .. package .. [[")
+      ))
+    ]]
+  return ts.matches(expr, bufnr)
+end
+
 --- Adapter options.
 setmetatable(M, {
   __call = function(_, opts)
