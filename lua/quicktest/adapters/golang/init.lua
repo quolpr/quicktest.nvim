@@ -225,6 +225,7 @@ end
 M.title = function(params)
   local additional_args = M.options.additional_args and M.options.additional_args(params.bufnr) or {}
   additional_args = params.opts.additional_args and vim.list_extend(additional_args, params.opts.additional_args)
+    or additional_args
 
   local args = cmd.build_args(params.module, params.func_names, params.sub_func_names, additional_args)
   args = M.options.args and M.options.args(params.bufnr, args) or args
