@@ -203,17 +203,17 @@ function M.run(adapter, params, config, opts)
         return
       end
 
+      if result.type == "exit" then
+        job.exit_code = result.code
+
+        current_job = nil
+        if adapter.after_run then
+          adapter.after_run(params, results)
+        end
+      end
+
       for _, buf in ipairs(ui.buffers) do
         local should_scroll = ui.should_continue_scroll(buf)
-        if result.type == "exit" then
-          job.exit_code = result.code
-
-          print_status()
-          current_job = nil
-          if adapter.after_run then
-            adapter.after_run(params, results)
-          end
-        end
 
         if result.type == "stdout" then
           if result.output then
@@ -224,8 +224,6 @@ function M.run(adapter, params, config, opts)
             table.insert(lines, "")
 
             set_ansi_lines(buf, line_count - 2, -1, false, lines)
-
-            print_status()
           end
         end
 
@@ -241,8 +239,6 @@ function M.run(adapter, params, config, opts)
             for i = 0, #lines - 1 do
               vim.api.nvim_buf_add_highlight(buf, -1, "DiagnosticError", line_count - 2 + i, 0, -1)
             end
-
-            print_status()
           end
         end
 
@@ -250,6 +246,8 @@ function M.run(adapter, params, config, opts)
           ui.scroll_down(buf)
         end
       end
+
+      print_status()
     end
   end)
 end
