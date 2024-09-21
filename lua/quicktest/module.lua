@@ -3,6 +3,7 @@ local notify = require("quicktest.notify")
 local a = require("plenary.async")
 local u = require("plenary.async.util")
 local ui = require("quicktest.ui")
+local colorized_printer = require("quicktest.colored_printer")
 
 local M = {}
 
@@ -32,6 +33,7 @@ local M = {}
 ---@field adapters QuicktestAdapter[]
 ---@field default_win_mode WinModeWithoutAuto
 ---@field use_baleia boolean
+---@field use_experimental_colorizer boolean
 
 --- @type {id: number, started_at: number, pid: number?} | nil
 local current_job = nil
@@ -113,6 +115,8 @@ function M.run(adapter, params, config, opts)
       vim.api.nvim_buf_set_lines(buf, start, finish, strict_indexing, new_lines)
     end
   end
+
+  local printer = colorized_printer.new()
 
   --- @type {id: number, started_at: number, pid: number?, exit_code: number?}
   local job = { id = math.random(10000000000000000), started_at = vim.uv.now() }
@@ -217,13 +221,17 @@ function M.run(adapter, params, config, opts)
 
         if result.type == "stdout" then
           if result.output then
-            local line_count = vim.api.nvim_buf_line_count(buf)
             local lines = vim.split(result.output, "\n")
 
             table.insert(lines, "")
             table.insert(lines, "")
 
-            set_ansi_lines(buf, line_count - 2, -1, false, lines)
+            if config.use_experimental_colorizer then
+              printer:set_next_lines(lines, buf, 2)
+            else
+              local line_count = vim.api.nvim_buf_line_count(buf)
+              set_ansi_lines(buf, line_count - 2, -1, false, lines)
+            end
           end
         end
 
