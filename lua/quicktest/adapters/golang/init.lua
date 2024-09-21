@@ -191,6 +191,7 @@ M.run = function(params, send)
   local env = vim.fn.environ()
   env = M.options.env and M.options.env(params.bufnr, env) or env
 
+  local current_out = ""
   local job = Job:new({
     command = bin,
     args = args,
@@ -201,10 +202,15 @@ M.run = function(params, send)
       local res = vim.json.decode(data)
 
       if res.Output and res.Output ~= "" then
-        res.Output = res.Output:gsub("\n", " "):gsub("\t", " "):gsub("%s+", " "):gsub("^%s+", "")
+        current_out = current_out .. res.Output --[[@as string]]
       end
 
-      send({ type = "stdout", raw = data, decoded = res, output = res.Output })
+      if string.find(current_out, "\n") then
+        local out = current_out:gsub("\n", ""):gsub("\t", " "):gsub("%s+", " "):gsub("^%s+", "")
+
+        current_out = ""
+        send({ type = "stdout", raw = data, decoded = res, output = out })
+      end
     end,
     on_stderr = function(_, data)
       send({ type = "stderr", raw = data, output = data })
