@@ -1,22 +1,186 @@
 # Quicktest
 
-Quicktest improves your testing experience in real-time with flexible display options like popups or split windows, customized to your workflow preferences. Key features include identifying the nearest function and triggering its test, rerunning previous tests from any location, and live scrolling of results alongside a running timer for immediate feedback.
-
-Currently supported languages: Go, Typescript/Javascript(vitest and Playwright), Elixir, Dart, C(criterion). There is also a template in Readme below about how to create own adapter. Should be pretty easy, just shell command execute!
-
-https://github.com/user-attachments/assets/9fcb3e17-f521-4660-9d9a-d9f763de5a1b
-
-## Features
-
 - **Contextual Test Triggering:** Run tests directly from where your cursor is located or execute all tests in the entire file/dir/project.
-- **Flexible Test Reruns:** Rerun tests from any location(with `require('quicktest').run_previous()`), automatically opening window or using an existing if it's open.
+- **Flexible Test Reruns:** Rerun tests from any location(with `require('quicktest').run_previous()`, keybind is in usage example), automatically opening window or using an existing if it's open.
 - **Live-Scrolling Results:** Continuously scroll through test results as they are generated. But stop scrolling if you decided to scroll up.
 - **Real-Time Feedback:** View the results of tests immediately as they run, without waiting for the completion of the test suite.
 - **Test Duration Timer:** Display a timer to monitor the duration of ongoing tests.
-- **ANSI colors:** Just supported.
-- **Easy API for adapters:** It's just all about running cmd and piping results to `quicktest`.
+- **ANSI colors** _EXPERIMETAL_
+- **Easy to write your own adapter:** It's just all about running cmd and piping results to `quicktest`.
 
-If these features resonate with you, Quicktest might be just what you need!
+https://github.com/user-attachments/assets/9fcb3e17-f521-4660-9d9a-d9f763de5a1b
+
+## Installation
+With Lazy:
+
+```lua
+{
+  "quolpr/quicktest.nvim",
+  config = function()
+    local qt = require("quicktest")
+
+    qt.setup({
+      -- Choose your adapter, here all supported adapters are listed
+      adapters = {
+        require("quicktest.adapters.golang")({}),
+        require("quicktest.adapters.vitest")({}),
+        require("quicktest.adapters.playwright")({}),
+        require("quicktest.adapters.elixir"),
+        require("quicktest.adapters.criterion"),
+        require("quicktest.adapters.dart"),
+      },
+      -- split or popup mode, when argument not specified
+      default_win_mode = "split",
+      use_experimental_colorizer = true
+    })
+  end,
+  dependencies = {
+    "nvim-lua/plenary.nvim",
+    "MunifTanjim/nui.nvim",
+  },
+  keys = {
+    {
+      "<leader>tl",
+      function()
+        local qt = require("quicktest")
+        -- current_win_mode return currently opened panel, split or popup
+        qt.run_line()
+        -- You can force open split or popup like this:
+        -- qt.run_line('split')
+        -- qt.run_line('popup')
+      end,
+      desc = "[T]est Run [L]line",
+    },
+    {
+      "<leader>tf",
+      function()
+        local qt = require("quicktest")
+
+        qt.run_file()
+      end,
+      desc = "[T]est Run [F]ile",
+    },
+    {
+      '<leader>td',
+      function()
+        local qt = require 'quicktest'
+
+        qt.run_dir()
+      end,
+      desc = '[T]est Run [D]ir',
+    },
+    {
+      '<leader>ta',
+      function()
+        local qt = require 'quicktest'
+
+        qt.run_all()
+      end,
+      desc = '[T]est Run [A]ll',
+    },
+    {
+      "<leader>tp",
+      function()
+        local qt = require("quicktest")
+
+        qt.run_previous()
+      end,
+      desc = "[T]est Run [P]revious",
+    },
+    {
+      "<leader>tt",
+      function()
+        local qt = require("quicktest")
+
+        qt.toggle_win("split")
+      end,
+      desc = "[T]est [T]oggle Window",
+    },
+    {
+      "<leader>tc",
+      function()
+        local qt = require("quicktest")
+
+        qt.cancel_current_run()
+      end,
+      desc = "[T]est [C]ancel Current Run",
+    },
+  },
+}
+```
+
+Without Lazy:
+```lua
+local qt = require("quicktest")
+
+-- Choose your adapter, here all supported adapters are listed
+qt.setup({
+  adapters = {
+    require("quicktest.adapters.golang"),
+    require("quicktest.adapters.vitest")({}),
+    require("quicktest.adapters.playwright")({}),
+    require("quicktest.adapters.elixir"),
+    require("quicktest.adapters.criterion"),
+    require("quicktest.adapters.dart"),
+  },
+  -- split or popup mode, when argument not specified
+  default_win_mode = "split",
+  use_experimental_colorizer = true
+})
+
+vim.keymap.set("n", "<leader>tl", qt.run_line, {
+  desc = "[T]est Run [L]line",
+})
+vim.keymap.set("n", "<leader>tf", qt.run_file, {
+  desc = "[T]est Run [F]ile",
+})
+vim.keymap.set("n", "<leader>td", qt.run_dir, {
+  desc = "[T]est Run [D]ir",
+})
+vim.keymap.set("n", "<leader>ta", qt.run_all, {
+  desc = "[T]est Run [A]ll",
+})
+vim.keymap.set("n", "<leader>tR", qt.run_previous, {
+  desc = "[T]est Run [P]revious",
+})
+-- vim.keymap.set("n", "<leader>tt", function()
+--   qt.toggle_win("popup")
+-- end, {
+--   desc = "[T]est [T]oggle popup window",
+-- })
+vim.keymap.set("n", "<leader>tt", function()
+  qt.toggle_win("split")
+end, {
+  desc = "[T]est [T]oggle Window",
+})
+vim.keymap.set("n", "<leader>tc", function()
+  qt.cancel_current_run()
+end, {
+  desc = "[T]est [C]ancel Current Run",
+})
+```
+
+
+## Commands
+
+```
+:QuicktestRun[Line/File/Dir/All] <win_mode> <adapter> ...<args>
+```
+
+Examples:
+
+```
+:QuicktestRunLine auto auto --my=arg
+:QuicktestRunLine popup auto --my=arg
+:QuicktestRunLine split auto --my=arg
+:QuicktestRunLine split go --my=arg
+
+
+:QuicktestRunFile split go --my=arg
+:QuicktestRunDir split go --my=arg
+:QuicktestRunAll split go --my=arg
+```
+
 
 ## Api
 
@@ -126,204 +290,6 @@ qt.toggle_win('split')
 qt.run_previous('popup')
 qt.run_previous('split')
 qt.run_previous()
-```
-
-### Commands
-
-```
-:QuicktestRun[Line/File/Dir/All] <win_mode> <adapter> ...<args>
-```
-
-Examples:
-
-```
-:QuicktestRunLine auto auto --my=arg
-:QuicktestRunLine popup auto --my=arg
-:QuicktestRunLine split auto --my=arg
-:QuicktestRunLine split go --my=arg
-
-
-:QuicktestRunFile split go --my=arg
-:QuicktestRunDir split go --my=arg
-:QuicktestRunAll split go --my=arg
-```
-
-## Installation
-
-Supported languages: Go, Typescript/Javascript(vitest and Playwright), C (criterion with meson), Dart<br>
-Feel free to open PR for your language, the plugin API is pretty simple and described in `Building your own plugin` section in this Readme.
-
-Simple configurations:
-
-```lua
-local qt = require("quicktest")
-
--- Choose your adapter, here all supported adapters are listed
-qt.setup({
-  adapters = {
-    require("quicktest.adapters.golang"),
-    require("quicktest.adapters.vitest")({
-      -- bin = function(bufnr) return 'vitest' end
-      -- cwd = function(bufnr) return bufnr end
-      -- config_path = function(bufnr) return 'vitest.config.js' end
-    }),
-    require("quicktest.adapters.playwright")({
-      -- bin = function(bufnr) return 'vitest' end
-      -- cwd = function(bufnr) return bufnr end
-      -- config_path = function(bufnr) return 'vitest.config.js' end
-    }),
-    require("quicktest.adapters.elixir"),
-    require("quicktest.adapters.criterion"),
-    require("quicktest.adapters.dart"),
-  },
-  -- split or popup mode, when argument not specified
-  default_win_mode = "split",
-  -- Baleia make coloured output. Requires baleia package. Can cause crashes https://github.com/quolpr/quicktest.nvim/issues/11
-  use_baleia = false
-})
-
-vim.keymap.set("n", "<leader>tl", qt.run_line, {
-  desc = "[T]est Run [L]line",
-})
-vim.keymap.set("n", "<leader>tf", qt.run_file, {
-  desc = "[T]est Run [F]ile",
-})
-vim.keymap.set("n", "<leader>td", qt.run_dir, {
-  desc = "[T]est Run [D]ir",
-})
-vim.keymap.set("n", "<leader>ta", qt.run_all, {
-  desc = "[T]est Run [A]ll",
-})
-vim.keymap.set("n", "<leader>tR", qt.run_previous, {
-  desc = "[T]est Run [P]revious",
-})
--- vim.keymap.set("n", "<leader>tt", function()
---   qt.toggle_win("popup")
--- end, {
---   desc = "[T]est [T]oggle popup window",
--- })
-vim.keymap.set("n", "<leader>tt", function()
-  qt.toggle_win("split")
-end, {
-  desc = "[T]est [T]oggle Window",
-})
-vim.keymap.set("n", "<leader>tc", function()
-  qt.cancel_current_run()
-end, {
-  desc = "[T]est [C]ancel Current Run",
-})
-```
-
-Using Lazy:
-
-```lua
-{
-  "quolpr/quicktest.nvim",
-  config = function()
-    local qt = require("quicktest")
-
-    qt.setup({
-      -- Choose your adapter, here all supported adapters are listed
-      adapters = {
-        require("quicktest.adapters.golang")({
-          additional_args = function(bufnr) return { '-race', '-count=1' } end
-          -- bin = function(bufnr) return 'go' end
-          -- cwd = function(bufnr) return 'your-cwd' end
-        }),
-        require("quicktest.adapters.vitest")({
-          -- bin = function(bufnr) return 'vitest' end
-          -- cwd = function(bufnr) return bufnr end
-          -- config_path = function(bufnr) return 'vitest.config.js' end
-        }),
-        require("quicktest.adapters.playwright")({
-          -- bin = function(bufnr) return 'playwright' end
-          -- cwd = function(bufnr) return bufnr end
-          -- config_path = function(bufnr) return 'playwright.config.js' end
-        }),
-        require("quicktest.adapters.elixir"),
-        require("quicktest.adapters.criterion"),
-        require("quicktest.adapters.dart"),
-      },
-      -- split or popup mode, when argument not specified
-      default_win_mode = "split",
-      -- Baleia make coloured output. Requires baleia package. Can cause crashes https://github.com/quolpr/quicktest.nvim/issues/11
-      use_baleia = false
-    })
-  end,
-  dependencies = {
-    "nvim-lua/plenary.nvim",
-    "MunifTanjim/nui.nvim",
-    -- "m00qek/baleia.nvim",
-  },
-  keys = {
-    {
-      "<leader>tl",
-      function()
-        local qt = require("quicktest")
-        -- current_win_mode return currently opened panel, split or popup
-        qt.run_line()
-        -- You can force open split or popup like this:
-        -- qt.run_line('split')
-        -- qt.run_line('popup')
-      end,
-      desc = "[T]est Run [L]line",
-    },
-    {
-      "<leader>tf",
-      function()
-        local qt = require("quicktest")
-
-        qt.run_file()
-      end,
-      desc = "[T]est Run [F]ile",
-    },
-    {
-      '<leader>td',
-      function()
-        local qt = require 'quicktest'
-
-        qt.run_dir()
-      end,
-      desc = '[T]est Run [D]ir',
-    },
-    {
-      '<leader>ta',
-      function()
-        local qt = require 'quicktest'
-
-        qt.run_all()
-      end,
-      desc = '[T]est Run [A]ll',
-    },
-    {
-      "<leader>tp",
-      function()
-        local qt = require("quicktest")
-
-        qt.run_previous()
-      end,
-      desc = "[T]est Run [P]revious",
-    },
-    {
-      "<leader>tt",
-      function()
-        local qt = require("quicktest")
-
-        qt.toggle_win("split")
-      end,
-      desc = "[T]est [T]oggle Window",
-    },
-    {
-      "<leader>tc",
-      function()
-        local qt = require("quicktest")
-
-        qt.cancel_current_run()
-      end,
-      desc = "[T]est [C]ancel Current Run",
-    },
-  },
-}
 ```
 
 ### Languages with multiple adapters
