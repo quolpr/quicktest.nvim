@@ -16,6 +16,8 @@ local M = {
   options = {},
 }
 
+local ns = vim.api.nvim_create_namespace("quicktest-elixir")
+
 ---@class ElixirRunParams
 ---@field bufnr integer
 ---@field func_names string[]
@@ -190,6 +192,36 @@ M.title = function(params)
   end
 
   return "Running tests"
+end
+
+---@param params ElixirRunParams
+---@param results CmdData[]
+M.after_run = function(params, results)
+  if params.file == nil then
+    return
+  end
+
+  local diagnostics = {}
+
+  for _, result in ipairs(results) do
+    local str = result.output
+    if str and string.match(str, "%(test%)") then
+      local line_no = tonumber(string.match(str, "%d+"))
+
+      if line_no then
+        table.insert(diagnostics, {
+          lnum = line_no - 1,
+          col = 0,
+          severity = vim.diagnostic.severity.ERROR,
+          message = "Assertion FAILED",
+          source = "Test",
+          user_data = "test",
+        })
+      end
+    end
+  end
+
+  vim.diagnostic.set(ns, params.bufnr, diagnostics, {})
 end
 
 --- Adapter options.
