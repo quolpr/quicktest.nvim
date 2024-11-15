@@ -25,7 +25,7 @@ M.is_split_opened = false
 M.is_popup_opened = false
 
 local function open_popup()
-  popup = Popup({
+  local popup_options = vim.tbl_deep_extend("force", {
     enter = true,
     bufnr = popup_buf,
     focusable = true,
@@ -37,7 +37,9 @@ local function open_popup()
       width = "80%",
       height = "60%",
     },
-  })
+  }, require("quicktest").config.popup_options)
+
+  popup = Popup(popup_options)
 
   popup:on(event.WinClosed, function()
     M.is_popup_opened = false
