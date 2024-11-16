@@ -6,6 +6,18 @@ local config = {
   default_win_mode = "split",
   use_baleia = false,
   use_experimental_colorizer = false,
+  popup_options = {
+    enter = true,
+    focusable = true,
+    border = {
+      style = "rounded",
+    },
+    position = "50%",
+    size = {
+      width = "80%",
+      height = "60%",
+    },
+  },
 }
 
 ---@class MyModule
