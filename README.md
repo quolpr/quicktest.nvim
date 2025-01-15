@@ -5,7 +5,7 @@
 - **Live-Scrolling Results:** Continuously scroll through test results as they are generated. But stop scrolling if you decided to scroll up.
 - **Real-Time Feedback:** View the results of tests immediately as they run, without waiting for the completion of the test suite.
 - **Test Duration Timer:** Display a timer to monitor the duration of ongoing tests.
-- **ANSI colors** _EXPERIMETAL_
+- **ANSI colors** builtin support.
 - **Easy to write your own adapter:** It's just all about running cmd and piping results to `quicktest`.
 
 https://github.com/user-attachments/assets/9fcb3e17-f521-4660-9d9a-d9f763de5a1b
@@ -31,7 +31,7 @@ With Lazy:
       },
       -- split or popup mode, when argument not specified
       default_win_mode = "split",
-      use_experimental_colorizer = true
+      use_builtin_colorizer = true
     })
   end,
   dependencies = {
@@ -125,7 +125,7 @@ qt.setup({
   },
   -- split or popup mode, when argument not specified
   default_win_mode = "split",
-  use_experimental_colorizer = true
+  use_builtin_colorizer = true
 })
 
 vim.keymap.set("n", "<leader>tl", qt.run_line, {
@@ -255,8 +255,6 @@ qt.setup({
   },
   -- split or popup mode, when argument not specified
   default_win_mode = "split",
-  -- Baleia make coloured output. Requires baleia package. Can cause crashes https://github.com/quolpr/quicktest.nvim/issues/11
-  use_baleia = false
 })
 
 -- Find nearest test under cursor and run in popup

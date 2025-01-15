@@ -306,7 +306,11 @@ M.run = function(params, send)
 
   job:start()
 
-  return job.pid
+  ---@type integer
+  ---@diagnostic disable-next-line: assign-type-mismatch
+  local pid = job.pid
+
+  return pid
 end
 
 -- ---@param params VitestRunParams

@@ -32,8 +32,7 @@ local M = {}
 ---@class QuicktestConfig
 ---@field adapters QuicktestAdapter[]
 ---@field default_win_mode WinModeWithoutAuto
----@field use_baleia boolean
----@field use_experimental_colorizer boolean
+---@field use_builtin_colorizer boolean
 
 --- @type {id: number, started_at: number, pid: number?} | nil
 local current_job = nil
@@ -74,16 +73,6 @@ local function get_adapter_by_name(adapters, name)
   return adapter
 end
 
-local baleia_pkg = nil
-local get_baleia = function()
-  if baleia_pkg then
-    return baleia_pkg
-  else
-    baleia_pkg = require("baleia").setup({ name = "QuicktestOutputColors" })
-    return baleia_pkg
-  end
-end
-
 --- @param adapter QuicktestAdapter
 --- @param params any
 --- @param config QuicktestConfig
@@ -98,22 +87,17 @@ function M.run(adapter, params, config, opts)
     end
   end
 
-  local set_ansi_lines = vim.api.nvim_buf_set_lines
-  if config.use_baleia then
-    set_ansi_lines = get_baleia().buf_set_lines
-  else
-    --- @param buf integer
-    --- @param start integer
-    --- @param finish number
-    --- @param strict_indexing boolean
-    --- @param replacements string[]
-    set_ansi_lines = function(buf, start, finish, strict_indexing, replacements)
-      local new_lines = {}
-      for i, line in ipairs(replacements) do
-        new_lines[i] = string.gsub(line, "[\27\155][][()#;?%d]*[A-PRZcf-ntqry=><~]", "")
-      end
-      vim.api.nvim_buf_set_lines(buf, start, finish, strict_indexing, new_lines)
+  --- @param buf integer
+  --- @param start integer
+  --- @param finish number
+  --- @param strict_indexing boolean
+  --- @param replacements string[]
+  local set_ansi_lines = function(buf, start, finish, strict_indexing, replacements)
+    local new_lines = {}
+    for i, line in ipairs(replacements) do
+      new_lines[i] = string.gsub(line, "[\27\155][][()#;?%d]*[A-PRZcf-ntqry=><~]", "")
     end
+    vim.api.nvim_buf_set_lines(buf, start, finish, strict_indexing, new_lines)
   end
 
   local printer = colorized_printer.new()
@@ -225,7 +209,7 @@ function M.run(adapter, params, config, opts)
             table.insert(lines, "")
             table.insert(lines, "")
 
-            if config.use_experimental_colorizer then
+            if config.use_builtin_colorizer then
               printer:set_next_lines(lines, buf, 2)
             else
               local line_count = vim.api.nvim_buf_line_count(buf)
