@@ -112,7 +112,7 @@ function M.run(adapter, params, config, opts)
   end
 
   local print_status = function()
-    for _, buf in ipairs(ui.buffers) do
+    for _, buf in ipairs(ui.get_buffers()) do
       local line_count = vim.api.nvim_buf_line_count(buf)
 
       local passedTime = vim.loop.now() - job.started_at
@@ -137,7 +137,7 @@ function M.run(adapter, params, config, opts)
     end
   end
 
-  for _, buf in ipairs(ui.buffers) do
+  for _, buf in ipairs(ui.get_buffers()) do
     vim.api.nvim_buf_set_lines(buf, 0, -1, false, {})
 
     ui.scroll_down(buf)
@@ -152,7 +152,7 @@ function M.run(adapter, params, config, opts)
 
     if adapter.title then
       local title = adapter.title(params)
-      for _, buf in ipairs(ui.buffers) do
+      for _, buf in ipairs(ui.get_buffers()) do
         vim.api.nvim_buf_set_lines(buf, 0, -1, false, {
           title,
           "",
@@ -163,7 +163,7 @@ function M.run(adapter, params, config, opts)
         ui.scroll_down(buf)
       end
     else
-      for _, buf in ipairs(ui.buffers) do
+      for _, buf in ipairs(ui.get_buffers()) do
         vim.api.nvim_buf_set_lines(buf, 0, -1, false, {
           "",
           "",
@@ -199,7 +199,7 @@ function M.run(adapter, params, config, opts)
         end
       end
 
-      for _, buf in ipairs(ui.buffers) do
+      for _, buf in ipairs(ui.get_buffers()) do
         local should_scroll = ui.should_continue_scroll(buf)
 
         if result.type == "stdout" then
@@ -311,7 +311,7 @@ function M.kill_current_run()
     vim.system({ "kill", tostring(current_job.pid) }):wait()
     current_job = nil
 
-    for _, buf in ipairs(ui.buffers) do
+    for _, buf in ipairs(ui.get_buffers()) do
       local line_count = vim.api.nvim_buf_line_count(buf)
 
       local passedTime = vim.loop.now() - job.started_at
@@ -338,7 +338,7 @@ end
 ---@param mode WinModeWithoutAuto
 function M.try_open_win(mode)
   ui.try_open_win(mode)
-  for _, buf in ipairs(ui.buffers) do
+  for _, buf in ipairs(ui.get_buffers()) do
     ui.scroll_down(buf)
   end
 end
@@ -356,7 +356,7 @@ function M.toggle_win(mode)
     else
       ui.try_open_win("split")
 
-      for _, buf in ipairs(ui.buffers) do
+      for _, buf in ipairs(ui.get_buffers()) do
         ui.scroll_down(buf)
       end
     end
@@ -366,7 +366,7 @@ function M.toggle_win(mode)
     else
       ui.try_open_win("popup")
 
-      for _, buf in ipairs(ui.buffers) do
+      for _, buf in ipairs(ui.get_buffers()) do
         ui.scroll_down(buf)
       end
     end

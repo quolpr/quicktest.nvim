@@ -64,7 +64,9 @@ local function get_popup_buf()
   return get_or_create_buf("quicktest-popup")
 end
 
-M.buffers = { get_split_buf(), get_popup_buf() }
+M.get_buffers = function()
+  return { get_split_buf(), get_popup_buf() }
+end
 M.is_split_opened = function()
   return is_buf_visible(get_split_buf())
 end
