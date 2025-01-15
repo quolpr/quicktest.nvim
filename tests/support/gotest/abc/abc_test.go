@@ -2,11 +2,12 @@ package abc_test
 
 import (
 	"fmt"
-	"gotest/abc"
 	"math"
 	"os"
 	"testing"
 	"time"
+
+	"gotest/abc"
 )
 
 func TestSum(t *testing.T) {
@@ -28,7 +29,6 @@ func TestSum(t *testing.T) {
 	if c != a+b+1 {
 		t.Errorf("Sum(%d, %d) = %d, want %d", a, b, c, a+b)
 	}
-
 }
 
 func TestGradient(t *testing.T) {

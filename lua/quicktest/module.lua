@@ -159,8 +159,7 @@ function M.run(adapter, params, config, opts)
     ui.scroll_down(buf)
   end
 
-  ---@diagnostic disable-next-line: missing-parameter
-  a.run(function()
+  local runLoop = function()
     local sender, receiver = a.control.channel.mpsc()
     local pid = adapter.run(params, function(data)
       sender.send(data)
@@ -236,16 +235,18 @@ function M.run(adapter, params, config, opts)
         end
 
         if result.type == "stderr" then
-          local line_count = vim.api.nvim_buf_line_count(buf)
-          local lines = vim.split(result.output, "\n")
+          if result.output then
+            local line_count = vim.api.nvim_buf_line_count(buf)
+            local lines = vim.split(result.output, "\n")
 
-          table.insert(lines, "")
-          table.insert(lines, "")
-          if #lines > 0 then
-            set_ansi_lines(buf, line_count - 2, -1, false, lines)
+            table.insert(lines, "")
+            table.insert(lines, "")
+            if #lines > 0 then
+              set_ansi_lines(buf, line_count - 2, -1, false, lines)
 
-            for i = 0, #lines - 1 do
-              vim.api.nvim_buf_add_highlight(buf, -1, "DiagnosticError", line_count - 2 + i, 0, -1)
+              for i = 0, #lines - 1 do
+                vim.api.nvim_buf_add_highlight(buf, -1, "DiagnosticError", line_count - 2 + i, 0, -1)
+              end
             end
           end
         end
@@ -257,6 +258,16 @@ function M.run(adapter, params, config, opts)
 
       print_status()
     end
+  end
+
+  ---@diagnostic disable-next-line: missing-parameter
+  a.run(function()
+    xpcall(runLoop, function(err)
+      print("Error in async job:", err)
+      print("Stack trace:", debug.traceback())
+
+      notify.error("Test run failed: " .. err)
+    end)
   end)
 end
 
