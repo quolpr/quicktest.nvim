@@ -326,9 +326,9 @@ end
 --- @param default_mode WinModeWithoutAuto
 --- @return WinModeWithoutAuto
 function M.current_win_mode(default_mode)
-  if ui.is_split_opened then
+  if ui.is_split_opened() then
     return "split"
-  elseif ui.is_popup_opened then
+  elseif ui.is_popup_opened() then
     return "popup"
   else
     return default_mode
@@ -351,7 +351,7 @@ end
 ---@param mode WinModeWithoutAuto
 function M.toggle_win(mode)
   if mode == "split" then
-    if ui.is_split_opened then
+    if ui.is_split_opened() then
       ui.try_close_win("split")
     else
       ui.try_open_win("split")
@@ -361,7 +361,7 @@ function M.toggle_win(mode)
       end
     end
   else
-    if ui.is_popup_opened then
+    if ui.is_popup_opened() then
       ui.try_close_win("popup")
     else
       ui.try_open_win("popup")

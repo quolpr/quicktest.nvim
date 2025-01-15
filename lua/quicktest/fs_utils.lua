@@ -75,7 +75,7 @@ M.path = (function()
   end
 
   local function path_join(...)
-    return table.concat(vim.tbl_flatten({ ... }), path_separator)
+    return table.concat(vim.fn.flatten({ ... }), path_separator)
   end
 
   -- Traverse the path calling cb along the way.
@@ -193,7 +193,7 @@ function M.find_ancestor_of_file(start_path, file)
 end
 
 function M.root_pattern(...)
-  local patterns = vim.tbl_flatten({ ... })
+  local patterns = vim.fn.flatten({ ... })
   local function matcher(path)
     for _, pattern in ipairs(patterns) do
       for _, p in ipairs(vim.fn.glob(M.path.join(path, pattern), true, true)) do
