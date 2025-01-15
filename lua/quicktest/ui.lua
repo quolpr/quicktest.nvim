@@ -20,37 +20,50 @@ local function is_buf_visible(bufnr)
   return find_win_by_bufnr(bufnr) ~= -1
 end
 
+local was_buf_initialized = {}
+
 -- Function to get or create a buffer with a specific name
 local function get_or_create_buf(name)
   local full_name = "quicktest://" .. name
+
+  local init_buf = function(buf)
+    api.nvim_buf_set_name(buf, full_name)
+
+    vim.bo[buf].undolevels = -1
+    vim.bo[buf].filetype = "quicktest-output"
+    vim.bo[buf].swapfile = false
+    vim.bo[buf].buftype = "nowrite" -- Buffer that cannot be written
+    vim.bo[buf].modified = false -- Start as unmodified
+
+    -- Add autocmd to prevent modification flag
+    vim.api.nvim_create_autocmd({ "TextChanged", "TextChangedI", "BufModifiedSet" }, {
+      buffer = buf,
+      callback = function()
+        if vim.bo[buf].modified then
+          vim.bo[buf].modified = false
+        end
+      end,
+    })
+
+    was_buf_initialized[buf] = true
+  end
 
   -- Find buffer with name if it exists
   for _, buf in ipairs(api.nvim_list_bufs()) do
     local buf_name = api.nvim_buf_get_name(buf)
     if buf_name == full_name then
+      if not was_buf_initialized[buf] then
+        init_buf(buf)
+      end
+
       return buf
     end
   end
 
   -- Create new buffer if not found
-  local buf = api.nvim_create_buf(false, false)
-  api.nvim_buf_set_name(buf, full_name)
-  vim.bo[buf].undolevels = -1
-  vim.bo[buf].filetype = "quicktest-output"
-  vim.bo[buf].swapfile = false
-  vim.bo[buf].modifiable = true
-  vim.bo[buf].buftype = "nowrite" -- Buffer that cannot be written
-  vim.bo[buf].modified = false -- Start as unmodified
+  local buf = api.nvim_create_buf(false, true)
 
-  -- Add autocmd to prevent modification flag
-  vim.api.nvim_create_autocmd({ "TextChanged", "TextChangedI", "BufModifiedSet" }, {
-    buffer = buf,
-    callback = function()
-      if vim.bo[buf].modified then
-        vim.bo[buf].modified = false
-      end
-    end,
-  })
+  init_buf(buf)
 
   return buf
 end
