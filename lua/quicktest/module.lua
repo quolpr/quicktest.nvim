@@ -4,6 +4,7 @@ local a = require("plenary.async")
 local u = require("plenary.async.util")
 local ui = require("quicktest.ui")
 local colorized_printer = require("quicktest.colored_printer")
+local p = require("plenary.path")
 
 local M = {}
 
@@ -36,7 +37,53 @@ local M = {}
 
 --- @type {id: number, started_at: number, pid: number?} | nil
 local current_job = nil
+--- @type {[string]: {type: string, adapter_name: string, bufname: string, cursor_pos: integer[]}} | nil
 local previous_run = nil
+
+local function load_previous_run()
+  local config_path = p:new(vim.fn.stdpath("data"), "quicktest_previous_runs.json")
+
+  if config_path:exists() then
+    local content = config_path:read()
+    if content and content ~= "" then
+      local ok, data = pcall(vim.json.decode, content)
+      if ok then
+        return data
+      end
+    end
+  end
+  return {}
+end
+
+local function save_previous_run()
+  if previous_run then
+    ---@diagnostic disable-next-line: missing-parameter
+    a.run(function()
+      local config_path = p:new(vim.fn.stdpath("data"), "quicktest_previous_runs.json")
+      local current_data = load_previous_run()
+
+      -- Merge the new previous_run data with existing data
+      for cwd, run_data in pairs(previous_run) do
+        current_data[cwd] = run_data
+      end
+
+      local json_str = vim.json.encode(current_data)
+      config_path:write(json_str, "w")
+    end)
+  end
+end
+local function get_buf_by_name(name)
+  local bufs = vim.api.nvim_list_bufs()
+
+  for _, bufnr in ipairs(bufs) do
+    local bufname = vim.api.nvim_buf_get_name(bufnr)
+    if bufname:match(name .. "$") then
+      return bufnr
+    end
+  end
+
+  return nil
+end
 
 --- @param config QuicktestConfig
 --- @param type RunType
@@ -105,7 +152,6 @@ function M.run(adapter, params, config, opts)
   --- @type {id: number, started_at: number, pid: number?, exit_code: number?}
   local job = { id = math.random(10000000000000000), started_at = vim.uv.now() }
   current_job = job
-  previous_run = { adapter = adapter, params = params, opts = opts }
 
   local is_running = function()
     return current_job and job.id == current_job.id
@@ -255,6 +301,29 @@ function M.run(adapter, params, config, opts)
   end)
 end
 
+local function get_adapter_and_params(config, type, adapter_name, current_buffer, cursor_pos, opts)
+  --- @type QuicktestAdapter
+  local adapter = adapter_name == "auto" and get_adapter(config, type)
+    or get_adapter_by_name(config.adapters, adapter_name)
+
+  if not adapter then
+    return nil, nil, "Failed to test: no suitable adapter found."
+  end
+
+  local method = adapter["build_" .. type .. "_run_params"]
+
+  if not method then
+    return nil, nil, "Failed to test: adapter '" .. adapter.name .. "' does not support '" .. type .. "' run."
+  end
+
+  local params, error = method(current_buffer, cursor_pos, opts)
+  if error ~= nil and error ~= "" then
+    return nil, nil, "Failed to test: " .. error .. "."
+  end
+
+  return adapter, params, nil
+end
+
 --- @param config QuicktestConfig
 --- @param type 'line' | 'file' | 'dir' | 'all'
 --- @param mode WinMode
@@ -266,28 +335,31 @@ function M.prepare_and_run(config, type, mode, adapter_name, opts)
   local win = vim.api.nvim_get_current_win() -- Get the current active window
   local cursor_pos = vim.api.nvim_win_get_cursor(win) -- Get the cursor position in the window
 
-  --- @type QuicktestAdapter
-  local adapter = adapter_name == "auto" and get_adapter(config, type)
-    or get_adapter_by_name(config.adapters, adapter_name)
-
-  if not adapter then
+  local adapter, params, error = get_adapter_and_params(config, type, adapter_name, current_buffer, cursor_pos, opts)
+  if error ~= nil then
+    return notify.warn(error)
+  end
+  if adapter == nil or params == nil then
     return notify.warn("Failed to test: no suitable adapter found.")
   end
 
-  local method = adapter["build_" .. type .. "_run_params"]
+  local buf_name = api.nvim_buf_get_name(current_buffer)
+  if buf_name ~= "" then
+    local cwd = vim.fn.getcwd()
+    if not previous_run then
+      previous_run = load_previous_run()
+    end
 
-  if not method then
-    return notify.warn("Failed to test: adapter '" .. adapter.name .. "' does not support '" .. type .. "' run.")
-  end
-
-  local params, error = method(current_buffer, cursor_pos, opts)
-
-  if error ~= nil and error ~= "" then
-    return notify.warn("Failed to test: " .. error .. ".")
+    previous_run[cwd] = {
+      type = type,
+      adapter_name = adapter.name,
+      bufname = buf_name,
+      cursor_pos = cursor_pos,
+    }
+    save_previous_run()
   end
 
   M.try_open_win(win_mode)
-
   M.run(adapter, params, config, opts)
 end
 
@@ -296,13 +368,46 @@ end
 function M.run_previous(config, mode)
   local win_mode = mode == "auto" and M.current_win_mode(config.default_win_mode) or mode --[[@as WinModeWithoutAuto]]
 
-  M.try_open_win(win_mode)
-
   if not previous_run then
-    return notify.warn("No previous run")
+    previous_run = load_previous_run()
   end
 
-  M.run(previous_run.adapter, previous_run.params, config, previous_run.opts)
+  local cwd = vim.fn.getcwd()
+  local current_run = previous_run[cwd]
+
+  if not current_run then
+    return notify.warn("No previous run for this project")
+  end
+
+  local bufnr = get_buf_by_name(current_run.bufname)
+  if bufnr == nil then
+    -- If the buffer doesn't exist, try to open the file
+    bufnr = vim.fn.bufadd(current_run.bufname)
+    if bufnr == 0 then
+      return notify.warn("Failed to open previous run file: " .. current_run.bufname)
+    end
+
+    -- Ensure the buffer is loaded
+    vim.bo[bufnr].buflisted = true
+  end
+
+  if vim.bo[bufnr].filetype == "" then
+    vim.api.nvim_buf_call(bufnr, function()
+      vim.cmd("filetype detect")
+    end)
+  end
+
+  local adapter, params, error =
+    get_adapter_and_params(config, current_run.type, current_run.adapter_name, bufnr, current_run.cursor_pos, {})
+  if error ~= nil then
+    return notify.warn(error)
+  end
+  if adapter == nil or params == nil then
+    return notify.warn("Failed to test: no suitable adapter found.")
+  end
+
+  M.try_open_win(win_mode)
+  M.run(adapter, params, config, {})
 end
 
 function M.kill_current_run()
