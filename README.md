@@ -7,6 +7,7 @@
 - **Test Duration Timer:** Display a timer to monitor the duration of ongoing tests.
 - **ANSI colors** builtin support.
 - **Easy to write your own adapter:** It's just all about running cmd and piping results to `quicktest`.
+- **Persistent previous run:** After restarting Neovim, Quicktest will remember the previous run and be able to rerun it.
 
 https://github.com/user-attachments/assets/9fcb3e17-f521-4660-9d9a-d9f763de5a1b
 
