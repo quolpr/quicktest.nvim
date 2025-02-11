@@ -18,6 +18,13 @@ function M.splitstr(inputstr, sep)
   return t
 end
 
+--- Check if table is empty
+---@param t table
+---@return boolean
+function M.is_table_empty(t)
+  return t == nil or next(t) == nil
+end
+
 ---Prints the test results using the callback provided by the plugin
 ---@param result_json table
 ---@param send fun(data: any)
@@ -77,14 +84,15 @@ end
 function M.get_test_exe_from_buffer(bufnr, builddir)
   local bufname = vim.api.nvim_buf_get_name(bufnr)
   local targets = meson.get_targets(builddir)
+
   for _, target in ipairs(targets) do
-    -- print(vim.inspect(target["target_sources"]))
-    for _, target_source in ipairs(target["target_sources"]) do
-      -- print(vim.inspect(source))
-      for _, source in ipairs(target_source["sources"]) do
-        -- print(vim.inspect(source))
-        if source == bufname then
-          return target["name"]
+    for _, ts in ipairs(target["target_sources"]) do
+      local sources = ts["sources"]
+      if not M.is_table_empty(sources) then
+        for _, src in ipairs(sources) do
+          if src == bufname then
+            return target["name"]
+          end
         end
       end
     end
