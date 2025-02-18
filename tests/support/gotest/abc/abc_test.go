@@ -31,6 +31,12 @@ func TestSum(t *testing.T) {
 	}
 }
 
+func TestIndent(t *testing.T) {
+	fmt.Printf("not indented\n")
+	fmt.Printf("\tindented\n")
+	fmt.Printf("\t\tindented twice\n")
+}
+
 func TestGradient(t *testing.T) {
 	width := 80
 	height := 24

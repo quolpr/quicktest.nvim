@@ -206,7 +206,7 @@ M.run = function(params, send)
       end
 
       if string.find(current_out, "\n") then
-        local out = current_out:gsub("\n", ""):gsub("\t", " "):gsub("%s+", " "):gsub("^%s+", "")
+        local out = current_out:gsub("\n", "")
 
         current_out = ""
         send({ type = "stdout", raw = data, decoded = res, output = out })
