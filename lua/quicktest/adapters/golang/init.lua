@@ -198,8 +198,14 @@ M.run = function(params, send)
     env = env,
     cwd = params.cwd,
     on_stdout = function(_, data)
-      --- @type GoLogEntry
-      local res = vim.json.decode(data)
+      --- @type boolean, GoLogEntry
+      local status, res = pcall(vim.json.decode, data)
+
+      if not status then
+        send({ type = "stdout", raw = data, output = data })
+
+        return
+      end
 
       if res.Output and res.Output ~= "" then
         current_out = current_out .. res.Output --[[@as string]]
@@ -248,6 +254,10 @@ M.after_run = function(params, results)
     if result.type == "stdout" then
       --- @type GoLogEntry
       local decoded = result.decoded
+
+      if not decoded then
+        return
+      end
 
       if decoded.Action == "fail" then
         local line_no = ts.get_func_def_line_no(params.bufnr, decoded.Test)
