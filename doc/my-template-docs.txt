@@ -45,6 +45,7 @@ With Lazy:
             require("quicktest.adapters.elixir"),
             require("quicktest.adapters.criterion"),
             require("quicktest.adapters.dart"),
+            require("quicktest.adapters.rspec"),
           },
           -- split or popup mode, when argument not specified
           default_win_mode = "split",
@@ -140,6 +141,7 @@ Without Lazy:
         require("quicktest.adapters.elixir"),
         require("quicktest.adapters.criterion"),
         require("quicktest.adapters.dart"),
+        require("quicktest.adapters.rspec"),
       },
       -- split or popup mode, when argument not specified
       default_win_mode = "split",
@@ -269,6 +271,12 @@ API                                           *my-template-docs-quicktest-api*
           ---@field args (fun(bufnr: integer, current: string[]): string[])?
           ---@field env (fun(bufnr: integer, current: table<string, string>): table<string, string>)?
           ---@field is_enabled (fun(bufnr: integer, type: RunType, current: boolean): boolean)?
+        }),
+        require("quicktest.adapters.rspec")({
+          ---@class RspecAdapterOptions
+          ---@field bin (fun(bufnr: integer, fallback: string): string)?
+          ---@field cwd (fun(bufnr: integer, fallback: string): string)?
+          ---@field is_enabled (fun(bufnr: integer, fallback: boolean): boolean)?
         }),
       },
       -- split or popup mode, when argument not specified
