@@ -191,6 +191,10 @@ end
 M.is_enabled = function(bufnr)
   local bufname = vim.api.nvim_buf_get_name(bufnr)
   local filename = util.get_filename(bufname)
+  if filename == nil then
+    return false
+  end
+
   return vim.startswith(filename, "test_") and vim.endswith(filename, ".c")
 end
 
