@@ -29,6 +29,7 @@ With Lazy:
         require("quicktest.adapters.elixir"),
         require("quicktest.adapters.criterion"),
         require("quicktest.adapters.dart"),
+        require("quicktest.adapters.rspec"),
       },
       -- split or popup mode, when argument not specified
       default_win_mode = "split",
@@ -123,6 +124,7 @@ qt.setup({
     require("quicktest.adapters.elixir"),
     require("quicktest.adapters.criterion"),
     require("quicktest.adapters.dart"),
+    require("quicktest.adapters.rspec"),
   },
   -- split or popup mode, when argument not specified
   default_win_mode = "split",
@@ -253,6 +255,12 @@ qt.setup({
       ---@field env (fun(bufnr: integer, current: table<string, string>): table<string, string>)?
       ---@field is_enabled (fun(bufnr: integer, type: RunType, current: boolean): boolean)?
     }),
+    require("quicktest.adapters.rspec")({
+      ---@class RspecAdapterOptions
+      ---@field bin (fun(bufnr: integer, fallback: string): string)?
+      ---@field cwd (fun(bufnr: integer, fallback: string): string)?
+      ---@field is_enabled (fun(bufnr: integer, fallback: boolean): boolean)?
+    }),
   },
   -- split or popup mode, when argument not specified
   default_win_mode = "split",
@@ -293,12 +301,12 @@ qt.run_previous()
 
 ### Languages with multiple adapters
 
-Same languages like Javascript/Typescript support multiple adapters that might match the same 
-test file. Use the `is_enabled` option to control which adapter should be used for the 
+Same languages like Javascript/Typescript support multiple adapters that might match the same
+test file. Use the `is_enabled` option to control which adapter should be used for the
 current buffer.
 
 Some adapters like `playwright` and `vitest` provide a helper function to determine whether
-the current buffer imports from a certain package like `@playwright` or `vitest`. Here is a 
+the current buffer imports from a certain package like `@playwright` or `vitest`. Here is a
 sample configuration for a project with Playwright and vitest tests:
 
 ```lua
