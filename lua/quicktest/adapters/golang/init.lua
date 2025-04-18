@@ -234,6 +234,42 @@ M.run = function(params, send)
   return pid
 end
 
+local function load_module(module_name)
+  local ok, module = pcall(require, module_name)
+  assert(ok, string.format("dap-go dependency error: %s not installed", module_name))
+  return module
+end
+
+M.debug_run = function(params)
+  -- local additional_args = M.options.additional_args and M.options.additional_args(params.bufnr) or {}
+  -- additional_args = params.opts.additional_args and vim.list_extend(additional_args, params.opts.additional_args)
+  --   or additional_args
+  --
+  -- local args = cmd.build_args(params.module, params.func_names, params.sub_func_names, additional_args)
+  -- args = M.options.args and M.options.args(params.bufnr, args) or args
+  --
+  -- local bin = M.get_bin(params.bufnr)
+  -- bin = M.options.bin and M.options.bin(params.bufnr, bin) or bin
+  --
+  -- local env = vim.fn.environ()
+  -- env = M.options.env and M.options.env(params.bufnr, env) or env
+
+  local run_args = cmd.get_run_args(params.func_names, params.sub_func_names)
+  local module = get_module_path(M.get_cwd(params.bufnr), params.bufnr) or "."
+
+  local dap = load_module("dap")
+  local config = {
+    type = "go",
+    name = run_args,
+    request = "launch",
+    mode = "test",
+    program = module,
+    args = { "-test.run", run_args },
+    buildFlags = "",
+  }
+  dap.run(config)
+end
+
 M.title = function(params)
   local additional_args = M.options.additional_args and M.options.additional_args(params.bufnr) or {}
   additional_args = params.opts.additional_args and vim.list_extend(additional_args, params.opts.additional_args)
