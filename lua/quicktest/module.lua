@@ -225,6 +225,9 @@ function M.run(adapter, params, config, opts)
       end
     end)
 
+    local last_update_time = 0
+    local update_interval = 100 -- ms
+
     local results = {}
     while is_running() do
       local result = receiver.recv()
@@ -279,6 +282,14 @@ function M.run(adapter, params, config, opts)
               end
             end
           end
+        end
+
+        local current_time = vim.loop.now()
+        if (current_time - last_update_time) > update_interval then
+          u.scheduler(function()
+            vim.cmd("redraw")
+          end)
+          last_update_time = current_time
         end
 
         if should_scroll then
