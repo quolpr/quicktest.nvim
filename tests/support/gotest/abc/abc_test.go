@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math"
 	"os"
+	"strconv"
 	"testing"
 	"time"
 
@@ -68,4 +69,10 @@ func TestSum2(t *testing.T) {
 			t.Log("TestSum passed")
 		}
 	})
+}
+
+func TestIntensiveOutput(t *testing.T) {
+	for i := range 10000 {
+		fmt.Println("hi!hi!hi!hi!hi!hi!hi!hi!hi!hi!hi!hi!hi!hi!hi!hi!hi!hi!hi!hi!hi!hi!" + strconv.Itoa(i))
+	}
 }
