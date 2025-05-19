@@ -6,6 +6,7 @@ local fs = require("quicktest.fs_utils")
 ---@class PytestAdapterOptions
 ---@field cwd (fun(bufnr: integer, current: string?): string)?
 ---@field bin (fun(bufnr: integer, current: string?): string)?
+---@field additional_args (fun(bufnr: integer): string[])?
 ---@field args (fun(bufnr: integer, current: string[]): string[])?
 ---@field env (fun(bufnr: integer, current: table<string, string>): table<string, string>)?
 ---@field is_enabled (fun(bufnr: integer, type: RunType, current: boolean): boolean)?
@@ -161,7 +162,13 @@ M.run = function(params, send)
   local args = build_args(params)
   local env = vim.fn.environ()
 
-  args = params.opts.additional_args and vim.list_extend(args, params.opts.additional_args) or args
+  local additional_args = M.options.additional_args and M.options.additional_args(params.bufnr) or {}
+  additional_args = params.opts.additional_args and vim.list_extend(additional_args, params.opts.additional_args)
+    or additional_args
+  if additional_args ~= nil then
+    args = vim.list_extend(args, additional_args)
+  end
+
   args = M.options.args and M.options.args(params.bufnr, args) or args
   env = M.options.env and M.options.env(params.bufnr, env) or env
 
