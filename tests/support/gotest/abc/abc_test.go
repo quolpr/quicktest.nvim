@@ -54,6 +54,11 @@ func TestGradient(t *testing.T) {
 	}
 }
 
+func TestStdERR(t *testing.T) {
+	fmt.Fprint(os.Stderr, "number of foo\n")
+	fmt.Fprint(os.Stderr, "number of foo\n")
+}
+
 func TestSum2(t *testing.T) {
 	fmt.Println("TestSum2 hey!")
 
@@ -74,5 +79,6 @@ func TestSum2(t *testing.T) {
 func TestIntensiveOutput(t *testing.T) {
 	for i := range 10000 {
 		fmt.Println("hi!hi!hi!hi!hi!hi!hi!hi!hi!hi!hi!hi!hi!hi!hi!hi!hi!hi!hi!hi!hi!hi!" + strconv.Itoa(i))
+		// time.Sleep(time.Millisecond * 500)
 	}
 }

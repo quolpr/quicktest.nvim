@@ -233,9 +233,7 @@ local function get_highlight_def(group)
   return hl_string
 end
 
-function ColoredPrinter:set_next_lines(lines, buf, shift)
-  local line_count = vim.api.nvim_buf_line_count(buf)
-
+function ColoredPrinter:set_next_lines(lines, buf, lines_count)
   local parsed_lines = {}
   local parsed_highlights = {}
 
@@ -245,13 +243,13 @@ function ColoredPrinter:set_next_lines(lines, buf, shift)
     table.insert(parsed_highlights, highlights)
   end
 
-  api.nvim_buf_set_lines(buf, line_count - shift, -1, false, parsed_lines)
+  api.nvim_buf_set_lines(buf, lines_count, -1, false, parsed_lines)
 
   for i, hl in ipairs(parsed_highlights) do
     for _, h in ipairs(hl) do
       -- print("[" .. h.start .. "," .. h.end_ .. ")", get_highlight_def(h.group))
 
-      api.nvim_buf_add_highlight(buf, -1, h.group, line_count - shift - 1 + i, h.start, h.end_)
+      api.nvim_buf_add_highlight(buf, -1, h.group, lines_count - 1 + i, h.start, h.end_)
     end
   end
 

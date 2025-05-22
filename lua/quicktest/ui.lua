@@ -77,9 +77,20 @@ local function get_popup_buf()
   return get_or_create_buf("quicktest-popup")
 end
 
+local was_split_opened = is_buf_visible(get_split_buf())
+local was_popup_opened = is_buf_visible(get_split_buf())
+
 M.get_buffers = function()
-  return { get_split_buf(), get_popup_buf() }
+  local buffers = {}
+  -- if was_split_opened then
+  table.insert(buffers, get_split_buf())
+  -- end
+  -- if was_popup_opened then
+  table.insert(buffers, get_popup_buf())
+  -- end
+  return buffers
 end
+
 M.is_split_opened = function()
   return is_buf_visible(get_split_buf())
 end
@@ -88,6 +99,7 @@ M.is_popup_opened = function()
 end
 
 local function open_popup()
+  was_popup_opened = true
   local popup_options = vim.tbl_deep_extend("force", {
     enter = true,
     bufnr = get_popup_buf(),
@@ -106,6 +118,7 @@ local function open_popup()
 end
 
 local function open_split()
+  was_split_opened = true
   local split = Split({
     relative = "editor",
     position = "bottom",
@@ -160,27 +173,22 @@ function M.scroll_down(buf)
   for _, win in ipairs(windows) do
     local win_bufnr = vim.api.nvim_win_get_buf(win)
     if win_bufnr == buf then
-      local line_count = vim.api.nvim_buf_line_count(buf)
-
-      if line_count < 3 then
-        return
-      end
-
-      vim.api.nvim_win_set_cursor(win, { line_count - 2, 0 })
+      vim.api.nvim_win_call(win, function()
+        vim.cmd("normal! G2k")
+      end)
     end
   end
 end
 
 ---@param buf number
-function M.should_continue_scroll(buf)
+function M.should_continue_scroll(buf, line_count)
   local windows = vim.api.nvim_list_wins()
   for _, win in ipairs(windows) do
     local win_bufnr = vim.api.nvim_win_get_buf(win)
     if win_bufnr == buf then
       local current_pos = vim.api.nvim_win_get_cursor(win)
-      local line_count = vim.api.nvim_buf_line_count(buf)
 
-      return current_pos[1] >= line_count - 2
+      return current_pos[1] >= line_count
     end
   end
 end

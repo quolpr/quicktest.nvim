@@ -149,42 +149,72 @@ function M.run(adapter, params, config, opts)
 
   local printer = colorized_printer.new()
 
-  --- @type {id: number, started_at: number, pid: number?, exit_code: number?}
+  --- @type {id: number, started_at: number, pid: number?, exit_code: number?, finished_at?: number}
   local job = { id = math.random(10000000000000000), started_at = vim.uv.now() }
   current_job = job
+
+  local last_redraw_time = 0
+  local update_interval = 200
 
   local is_running = function()
     return current_job and job.id == current_job.id
   end
 
+  local print_buf_status = function(buf, line_count)
+    local passedTime = vim.loop.now() - job.started_at
+    if job.finished_at then
+      passedTime = job.finished_at - job.started_at
+    end
+
+    local time_display = string.format("%.2f", passedTime / 1000) .. "s"
+
+    if job.exit_code == nil then
+      vim.api.nvim_buf_set_lines(buf, line_count - 1, line_count, false, {
+        "Running " .. time_display,
+      })
+      vim.api.nvim_buf_add_highlight(buf, -1, "DiagnosticInfo", line_count - 1, 0, -1)
+    else
+      if job.exit_code ~= 0 then
+        vim.api.nvim_buf_set_lines(buf, line_count - 1, line_count, false, { "Failed " .. time_display })
+
+        vim.api.nvim_buf_add_highlight(buf, -1, "DiagnosticError", line_count - 1, 0, -1)
+      else
+        vim.api.nvim_buf_set_lines(buf, line_count - 1, line_count, false, { "Passed " .. time_display })
+
+        vim.api.nvim_buf_add_highlight(buf, -1, "DiagnosticOk", line_count - 1, 0, -1)
+      end
+    end
+  end
   local print_status = function()
     for _, buf in ipairs(ui.get_buffers()) do
       local line_count = vim.api.nvim_buf_line_count(buf)
 
-      local passedTime = vim.loop.now() - job.started_at
-      local time_display = string.format("%.2f", passedTime / 1000) .. "s"
-
-      if job.exit_code == nil then
-        vim.api.nvim_buf_set_lines(buf, line_count - 1, line_count, false, {
-          "Running " .. time_display,
-        })
-        vim.api.nvim_buf_add_highlight(buf, -1, "DiagnosticInfo", line_count - 1, 0, -1)
-      else
-        if job.exit_code ~= 0 then
-          vim.api.nvim_buf_set_lines(buf, line_count - 1, line_count, false, { "Failed " .. time_display })
-
-          vim.api.nvim_buf_add_highlight(buf, -1, "DiagnosticError", line_count - 1, 0, -1)
-        else
-          vim.api.nvim_buf_set_lines(buf, line_count - 1, line_count, false, { "Passed " .. time_display })
-
-          vim.api.nvim_buf_add_highlight(buf, -1, "DiagnosticOk", line_count - 1, 0, -1)
-        end
-      end
+      print_buf_status(buf, line_count)
+      -- local passedTime = vim.loop.now() - job.started_at
+      -- local time_display = string.format("%.2f", passedTime / 1000) .. "s"
+      --
+      -- if job.exit_code == nil then
+      --   vim.api.nvim_buf_set_lines(buf, line_count - 1, line_count, false, {
+      --     "Running " .. time_display,
+      --   })
+      --   vim.api.nvim_buf_add_highlight(buf, -1, "DiagnosticInfo", line_count - 1, 0, -1)
+      -- else
+      --   if job.exit_code ~= 0 then
+      --     vim.api.nvim_buf_set_lines(buf, line_count - 1, line_count, false, { "Failed " .. time_display })
+      --
+      --     vim.api.nvim_buf_add_highlight(buf, -1, "DiagnosticError", line_count - 1, 0, -1)
+      --   else
+      --     vim.api.nvim_buf_set_lines(buf, line_count - 1, line_count, false, { "Passed " .. time_display })
+      --
+      --     vim.api.nvim_buf_add_highlight(buf, -1, "DiagnosticOk", line_count - 1, 0, -1)
+      --   end
+      -- end
     end
   end
 
   for _, buf in ipairs(ui.get_buffers()) do
     vim.api.nvim_buf_set_lines(buf, 0, -1, false, {})
+    vim.api.nvim_buf_clear_namespace(buf, -1, 0, -1)
 
     ui.scroll_down(buf)
   end
@@ -220,15 +250,18 @@ function M.run(adapter, params, config, opts)
     ---@diagnostic disable-next-line: missing-parameter
     a.run(function()
       while is_running() do
-        print_status()
-        u.sleep(100)
+        local current_time = vim.loop.now()
+        if (current_time - last_redraw_time) > update_interval then
+          print_status()
+        end
+
+        u.sleep(200)
       end
     end)
 
-    local last_update_time = 0
-    local update_interval = 100 -- ms
-
+    local lines_count = 2
     local results = {}
+    local is_first_print = true
     while is_running() do
       local result = receiver.recv()
       table.insert(results, result)
@@ -241,63 +274,63 @@ function M.run(adapter, params, config, opts)
 
       if result.type == "exit" then
         job.exit_code = result.code
+        job.finished_at = vim.uv.now()
 
         current_job = nil
         if adapter.after_run then
           adapter.after_run(params, results)
         end
+
+        last_redraw_time = 0
       end
 
-      for _, buf in ipairs(ui.get_buffers()) do
-        local should_scroll = ui.should_continue_scroll(buf)
+      if result.type == "stdout" or result.type == "stderr" then
+        if result.output then
+          local lines = vim.split(result.output, "\n")
+          local new_lines_count = #lines
 
-        if result.type == "stdout" then
-          if result.output then
-            local lines = vim.split(result.output, "\n")
-
+          if new_lines_count > 0 then
             table.insert(lines, "")
             table.insert(lines, "")
 
-            if config.use_builtin_colorizer then
-              printer:set_next_lines(lines, buf, 2)
-            else
-              local line_count = vim.api.nvim_buf_line_count(buf)
-              set_ansi_lines(buf, line_count - 2, -1, false, lines)
-            end
-          end
-        end
+            for _, buf in ipairs(ui.get_buffers()) do
+              local should_scroll = ui.should_continue_scroll(buf, lines_count)
 
-        if result.type == "stderr" then
-          if result.output then
-            local line_count = vim.api.nvim_buf_line_count(buf)
-            local lines = vim.split(result.output, "\n")
+              if config.use_builtin_colorizer and result.type == "stdout" then
+                printer:set_next_lines(lines, buf, lines_count)
+              else
+                set_ansi_lines(buf, lines_count, -1, false, lines)
+              end
 
-            table.insert(lines, "")
-            table.insert(lines, "")
-            if #lines > 0 then
-              set_ansi_lines(buf, line_count - 2, -1, false, lines)
+              if result.type == "stderr" then
+                for i = 0, new_lines_count do
+                  vim.api.nvim_buf_add_highlight(buf, -1, "DiagnosticError", lines_count + i, 0, -1)
+                end
+              end
 
-              for i = 0, #lines - 1 do
-                vim.api.nvim_buf_add_highlight(buf, -1, "DiagnosticError", line_count - 2 + i, 0, -1)
+              if should_scroll then
+                ui.scroll_down(buf)
               end
             end
+
+            if lines_count > 2 and is_first_print then
+              last_redraw_time = 0
+              is_first_print = false
+            end
+
+            lines_count = lines_count + new_lines_count
           end
-        end
-
-        local current_time = vim.loop.now()
-        if (current_time - last_update_time) > update_interval then
-          u.scheduler(function()
-            vim.cmd("redraw")
-          end)
-          last_update_time = current_time
-        end
-
-        if should_scroll then
-          ui.scroll_down(buf)
         end
       end
 
-      print_status()
+      -- TODO: add using_buffers config field to improve performance
+      -- TODO: FIX THAT BUFFER NEED TREEStiITER LOAADED!!
+      local current_time = vim.loop.now()
+      if (current_time - last_redraw_time) > update_interval then
+        print_status()
+        vim.cmd("redraw")
+        last_redraw_time = current_time
+      end
     end
   end
 
