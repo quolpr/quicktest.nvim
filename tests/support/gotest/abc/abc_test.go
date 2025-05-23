@@ -42,15 +42,17 @@ func TestGradient(t *testing.T) {
 	width := 80
 	height := 24
 
-	for y := 0; y < height; y++ {
-		for x := 0; x < width; x++ {
-			r := uint8(255 * float64(x) / float64(width-1))
-			g := uint8(255 * float64(y) / float64(height-1))
-			b := uint8(255 * math.Abs(math.Sin(float64(x*y)/100)))
+	for range 100 {
+		for y := 0; y < height; y++ {
+			for x := 0; x < width; x++ {
+				r := uint8(255 * float64(x) / float64(width-1))
+				g := uint8(255 * float64(y) / float64(height-1))
+				b := uint8(255 * math.Abs(math.Sin(float64(x*y)/100)))
 
-			fmt.Printf("\x1b[48;2;%d;%d;%dm ", r, g, b)
+				fmt.Printf("\x1b[48;2;%d;%d;%dm ", r, g, b)
+			}
+			fmt.Print("\x1b[0m\n")
 		}
-		fmt.Print("\x1b[0m\n")
 	}
 }
 
@@ -79,6 +81,6 @@ func TestSum2(t *testing.T) {
 func TestIntensiveOutput(t *testing.T) {
 	for i := range 10000 {
 		fmt.Println("hi!hi!hi!hi!hi!hi!hi!hi!hi!hi!hi!hi!hi!hi!hi!hi!hi!hi!hi!hi!hi!hi!" + strconv.Itoa(i))
-		// time.Sleep(time.Millisecond * 500)
+		// 	time.Sleep(time.Millisecond * 500)
 	}
 }

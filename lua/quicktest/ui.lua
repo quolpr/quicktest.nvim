@@ -77,18 +77,8 @@ local function get_popup_buf()
   return get_or_create_buf("quicktest-popup")
 end
 
-local was_split_opened = is_buf_visible(get_split_buf())
-local was_popup_opened = is_buf_visible(get_split_buf())
-
 M.get_buffers = function()
-  local buffers = {}
-  -- if was_split_opened then
-  table.insert(buffers, get_split_buf())
-  -- end
-  -- if was_popup_opened then
-  table.insert(buffers, get_popup_buf())
-  -- end
-  return buffers
+  return { get_split_buf(), get_popup_buf() }
 end
 
 M.is_split_opened = function()
@@ -99,7 +89,6 @@ M.is_popup_opened = function()
 end
 
 local function open_popup()
-  was_popup_opened = true
   local popup_options = vim.tbl_deep_extend("force", {
     enter = true,
     bufnr = get_popup_buf(),
@@ -118,7 +107,6 @@ local function open_popup()
 end
 
 local function open_split()
-  was_split_opened = true
   local split = Split({
     relative = "editor",
     position = "bottom",
