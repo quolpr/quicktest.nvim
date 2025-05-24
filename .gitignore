@@ -2,3 +2,4 @@ vendor/plenary.nvim
 .DS_Store
 tests/support/criterion/build
 tests/support/criterion/.cache
+__pycache__

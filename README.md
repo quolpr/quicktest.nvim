@@ -26,6 +26,7 @@ With Lazy:
         require("quicktest.adapters.golang")({}),
         require("quicktest.adapters.vitest")({}),
         require("quicktest.adapters.playwright")({}),
+        require("quicktest.adapters.pytest")({}),
         require("quicktest.adapters.elixir"),
         require("quicktest.adapters.criterion"),
         require("quicktest.adapters.dart"),
@@ -121,6 +122,7 @@ qt.setup({
     require("quicktest.adapters.golang"),
     require("quicktest.adapters.vitest")({}),
     require("quicktest.adapters.playwright")({}),
+    require("quicktest.adapters.pytest")({}),
     require("quicktest.adapters.elixir"),
     require("quicktest.adapters.criterion"),
     require("quicktest.adapters.dart"),
@@ -234,6 +236,17 @@ qt.setup({
       ---@field args (fun(bufnr: integer, current: string[]): string[])?
       ---@field env (fun(bufnr: integer, current: table<string, string>): table<string, string>)?
       ---@field is_enabled (fun(bufnr: integer, type: RunType, current: boolean): boolean)?
+    }),
+    require("quicktest.adapters.pytest")({
+      ---@class PytestAdapterOptions
+      ---@field cwd (fun(bufnr: integer, current: string?): string)?
+      ---@field bin (fun(bufnr: integer, current: string?): string)?
+      ---@field args (fun(bufnr: integer, current: string[]): string[])?
+      ---@field env (fun(bufnr: integer, current: table<string, string>): table<string, string>)?
+      ---@field is_enabled (fun(bufnr: integer, type: RunType, current: boolean): boolean)?
+
+      -- bin = function(bufnr, current) return current end
+      -- cwd = function(bufnr, current) return current end
     }),
     require("quicktest.adapters.elixir")({
       ---@class ElixirAdapterOptions
