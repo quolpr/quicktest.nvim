@@ -220,7 +220,6 @@ function M.run(adapter, params, config, opts)
     end)
     job.pid = pid
 
-    local lines_count = 1
     if adapter.title then
       local title = adapter.title(params)
       for _, buf in ipairs(ui.get_buffers()) do
@@ -230,7 +229,6 @@ function M.run(adapter, params, config, opts)
           "",
           "",
         })
-        lines_count = 2
 
         ui.scroll_down(buf)
       end
@@ -256,19 +254,26 @@ function M.run(adapter, params, config, opts)
           table.insert(lines_buffer, "")
 
           for _, buf in ipairs(ui.get_buffers()) do
-            local should_scroll = ui.should_continue_scroll(buf, lines_count)
+            local lines_count = vim.api.nvim_buf_line_count(buf)
+            local should_scroll = ui.should_continue_scroll(buf, lines_count - 2)
 
             if config.use_builtin_colorizer then
-              printer:set_next_lines(lines_buffer, buf, lines_count)
+              printer:set_next_lines(lines_buffer, buf, lines_count - 2)
             else
-              set_ansi_lines(buf, lines_count, -1, false, lines_buffer)
+              set_ansi_lines(buf, lines_count - 2, -1, false, lines_buffer)
             end
 
             for i, _ in ipairs(errored_lines) do
-              vim.highlight.range(buf, stderr_ns, "DiagnosticError", { i + lines_count, 0 }, { i + lines_count, -1 })
+              vim.highlight.range(
+                buf,
+                stderr_ns,
+                "DiagnosticError",
+                { i + lines_count - 2, 0 },
+                { i + lines_count - 2, -1 }
+              )
             end
 
-            print_buf_status(buf, lines_count + new_lines_count + 2)
+            print_buf_status(buf, lines_count + new_lines_count)
             if should_scroll then
               ui.scroll_down(buf)
             end
@@ -276,7 +281,6 @@ function M.run(adapter, params, config, opts)
 
           lines_buffer = {}
           errored_lines = {}
-          lines_count = lines_count + new_lines_count
         end
       end
 
@@ -308,7 +312,6 @@ function M.run(adapter, params, config, opts)
       end)
     end)
 
-    -- TODO: FIX THAT BUFFER NEED TREEStiITER LOAADED!!
     while is_running() do
       local result = receiver.recv()
       table.insert(results, result)
