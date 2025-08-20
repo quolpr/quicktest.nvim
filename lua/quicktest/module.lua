@@ -315,7 +315,7 @@ end
 local function get_adapter_and_params(config, type, adapter_name, current_buffer, cursor_pos, opts)
   --- @type QuicktestAdapter
   local adapter = adapter_name == "auto" and get_adapter(config, type)
-    or get_adapter_by_name(config.adapters, adapter_name)
+      or get_adapter_by_name(config.adapters, adapter_name)
 
   if not adapter then
     return nil, nil, "Failed to test: no suitable adapter found."
@@ -343,7 +343,7 @@ end
 function M.prepare_and_run(config, type, mode, adapter_name, opts)
   local win_mode = mode == "auto" and M.current_win_mode(config.default_win_mode) or mode --[[@as WinModeWithoutAuto]]
   local current_buffer = api.nvim_get_current_buf()
-  local win = vim.api.nvim_get_current_win() -- Get the current active window
+  local win = vim.api.nvim_get_current_win()          -- Get the current active window
   local cursor_pos = vim.api.nvim_win_get_cursor(win) -- Get the cursor position in the window
 
   local adapter, params, error = get_adapter_and_params(config, type, adapter_name, current_buffer, cursor_pos, opts)
@@ -409,7 +409,7 @@ function M.run_previous(config, mode)
   end
 
   local adapter, params, error =
-    get_adapter_and_params(config, current_run.type, current_run.adapter_name, bufnr, current_run.cursor_pos, {})
+      get_adapter_and_params(config, current_run.type, current_run.adapter_name, bufnr, current_run.cursor_pos, {})
   if error ~= nil then
     return notify.warn(error)
   end
@@ -434,6 +434,7 @@ function M.kill_current_run()
       local time_display = string.format("%.2f", passedTime / 1000) .. "s"
 
       vim.api.nvim_buf_set_lines(buf, line_count - 1, line_count, false, { "Cancelled after " .. time_display })
+      vim.hl.range(buf, -1, "DiagnosticWarn", { line_count - 1, 0 }, { line_count - 1, -1 })
       vim.api.nvim_buf_add_highlight(buf, -1, "DiagnosticWarn", line_count - 1, 0, -1)
     end
   end
@@ -466,26 +467,17 @@ end
 
 ---@param mode WinModeWithoutAuto
 function M.toggle_win(mode)
+  local is_open = false
   if mode == "split" then
-    if ui.is_split_opened() then
-      ui.try_close_win("split")
-    else
-      ui.try_open_win("split")
-
-      for _, buf in ipairs(ui.get_buffers()) do
-        ui.scroll_down(buf)
-      end
-    end
+    is_open = ui.is_split_opened()
   else
-    if ui.is_popup_opened() then
-      ui.try_close_win("popup")
-    else
-      ui.try_open_win("popup")
+    is_open = ui.is_popup_opened()
+  end
 
-      for _, buf in ipairs(ui.get_buffers()) do
-        ui.scroll_down(buf)
-      end
-    end
+  if is_open then
+    M.try_close_win(mode)
+  else
+    M.try_open_win(mode)
   end
 end
 

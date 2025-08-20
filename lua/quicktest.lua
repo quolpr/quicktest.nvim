@@ -86,14 +86,4 @@ M.cancel_current_run = function()
   module.kill_current_run()
 end
 
--- module.run(require("quicktest.adapters.golang"), {
---   func_names = { "TestSum" },
---   sub_func_names = {},
---   cwd = "/Users/quolpr/.config/nvim/go_test",
---   module = "./abc",
---   bufnr = 0,
--- })
--- M.run(api.nvim_get_current_buf(), { "TestSum" }, nil, "/Users/quolpr/.config/nvim/go_test", "./abc")
--- require("plenary.reload").reload_module("quicktest", false)
-
 return M
