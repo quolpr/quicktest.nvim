@@ -99,7 +99,7 @@ local function open_popup()
   local popup_options = vim.tbl_deep_extend("force", {
     enter = false,  -- Don't enter the popup window by default
     bufnr = get_popup_buf(),
-    focusable = true,
+    focusable = false,
     border = {
       style = "rounded",
     },
@@ -218,6 +218,9 @@ function M.init()
   storage_subscription = function(event_type, data)
     if event_type == 'test_output' then
       M.handle_output(data)
+    elseif event_type == 'run_started' then
+      -- Reset for new test run
+      has_started = false
     elseif event_type == 'test_started' then
       -- Only clear and show title for the first test (main test run)
       if not has_started then
@@ -248,8 +251,6 @@ function M.clear_buffers()
     vim.api.nvim_buf_set_lines(buf, 0, -1, false, {})
     M.scroll_down(buf)
   end
-  -- Reset the flag so next run can clear again
-  has_started = false
 end
 
 -- Show test title

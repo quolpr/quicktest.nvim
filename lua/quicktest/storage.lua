@@ -23,11 +23,21 @@ local current_state = {
   subscribers = {}
 }
 
--- Clear current run state
+-- Emit event to all subscribers
+---@param event_type string
+---@param data any
+local function emit_event(event_type, data)
+  for _, subscriber in ipairs(current_state.subscribers) do
+    pcall(subscriber, event_type, data)
+  end
+end
+
+-- Clear current run state and emit run_started event
 function M.clear()
   current_state.test_results = {}
   current_state.output_lines = {}
   -- Don't clear subscribers - they persist across runs
+  emit_event("run_started", {})
 end
 
 -- Subscribe to storage events for current run
@@ -47,15 +57,6 @@ function M.unsubscribe(callback)
   end
 end
 
--- Emit event to all subscribers
----@param event_type string
----@param data any
-local function emit_event(event_type, data)
-  for _, subscriber in ipairs(current_state.subscribers) do
-    pcall(subscriber, event_type, data)
-  end
-end
-
 -- Add test start event (or update existing)
 ---@param name string
 ---@param location string
@@ -71,7 +72,7 @@ function M.test_started(name, location)
       return
     end
   end
-  
+
   -- Create new test entry
   local result = {
     name = name,
@@ -80,7 +81,7 @@ function M.test_started(name, location)
     duration = nil,
     timestamp = vim.uv.now()
   }
-  
+
   table.insert(current_state.test_results, result)
   emit_event('test_started', result)
 end
@@ -94,7 +95,7 @@ function M.test_output(type, data)
     data = data,
     timestamp = vim.uv.now()
   }
-  
+
   table.insert(current_state.output_lines, output)
   emit_event('test_output', output)
 end
@@ -138,11 +139,11 @@ function M.get_run_summary()
     passed = 0,
     failed = 0
   }
-  
+
   for _, result in ipairs(current_state.test_results) do
     summary[result.status] = summary[result.status] + 1
   end
-  
+
   return summary
 end
 

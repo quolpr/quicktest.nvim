@@ -302,9 +302,8 @@ M.after_run = function(params, results)
   -- Process test results and update storage with precise locations
   for _, result in ipairs(results) do
     if result.type == "test_result" and result.status == "failed" then
-      -- Find the actual test file and line (safe to call here, not in fast event)
-      local file_path, line_no = find_test_location(result.test_name, params.cwd, params.module)
-      local location = file_path and line_no and (file_path .. ":" .. line_no) or nil
+      -- Find the actual test file and line using adapter method
+      local location = M.find_test_location(result.test_name, params)
 
       -- Always update storage, with or without location (test was already marked finished in default strategy)
       -- This just updates the location if we found it
