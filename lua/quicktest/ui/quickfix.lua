@@ -40,13 +40,14 @@ function M.update_quickfix()
       if filename and lnum then
         -- Only include entries with proper file:line format
         lnum = tonumber(lnum) or 1
-        table.insert(qf_items, {
+        local qf_item = {
           filename = filename,
           lnum = lnum,
           col = 1,
           text = "Test failed: " .. result.name,
           type = "E"
-        })
+        }
+        table.insert(qf_items, qf_item)
       end
     end
   end

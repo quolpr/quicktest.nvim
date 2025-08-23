@@ -359,6 +359,17 @@ M.is_enabled = function(bufnr, type)
   return M.options.is_enabled(bufnr, type, is_test_file)
 end
 
+---@param test_name string
+---@param params GoRunParams
+---@return string?
+M.find_test_location = function(test_name, params)
+  local file_path, line_no = find_test_location(test_name, params.cwd, params.module)
+  if file_path and line_no then
+    return file_path .. ":" .. line_no
+  end
+  return nil
+end
+
 ---@param bufnr integer
 ---@param params GoRunParams
 ---@return table?
