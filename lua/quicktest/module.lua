@@ -3,7 +3,6 @@ local notify = require("quicktest.notify")
 local a = require("plenary.async")
 local u = require("plenary.async.util")
 local ui = require("quicktest.ui")
-local colorized_printer = require("quicktest.colored_printer")
 local p = require("plenary.path")
 local strategies = require("quicktest.strategies")
 
@@ -17,7 +16,7 @@ local M = {}
 ---@field additional_args string[]?
 ---@field strategy ('default' | 'dap')?
 
----@alias CmdData {type: 'stdout', raw: string, output: string?, decoded: any} | {type: 'stderr', raw: string, output: string?, decoded: any} | {type: 'exit', code: number}
+---@alias CmdData {type: 'stdout', raw: string, output: string?, decoded: any} | {type: 'stderr', raw: string, output: string?, decoded: any} | {type: 'exit', code: number} | {type: 'test_result', test_name: string, status: 'passed' | 'failed', location: string?}
 
 ---@alias RunType 'line' | 'file' | 'dir' | 'all'
 
@@ -182,7 +181,10 @@ function M.run(adapter, params, mode, config, opts)
   -- Only open UI window for non-DAP strategies
   if strategy_name ~= "dap" then
     local win_mode = mode == "auto" and M.current_win_mode(config.default_win_mode) or mode --[[@as WinModeWithoutAuto]]
-    M.try_open_win(win_mode)
+    local panel = ui.get("panel")
+    if panel then
+      panel.try_open_win(win_mode)
+    end
   end
 
   return strategy.run(adapter, params, config, opts)
@@ -311,41 +313,54 @@ end
 --- @param default_mode WinModeWithoutAuto
 --- @return WinModeWithoutAuto
 function M.current_win_mode(default_mode)
-  if ui.is_split_opened() then
-    return "split"
-  elseif ui.is_popup_opened() then
-    return "popup"
-  else
-    return default_mode
+  local panel = ui.get("panel")
+  if panel then
+    if panel.is_split_opened() then
+      return "split"
+    elseif panel.is_popup_opened() then
+      return "popup"
+    else
+      return default_mode
+    end
   end
+  return default_mode
 end
 
 ---@param mode WinModeWithoutAuto
 function M.try_open_win(mode)
-  ui.try_open_win(mode)
-  for _, buf in ipairs(ui.get_buffers()) do
-    ui.scroll_down(buf)
+  local panel = ui.get("panel")
+  if panel then
+    panel.try_open_win(mode)
+    for _, buf in ipairs(panel.get_buffers()) do
+      panel.scroll_down(buf)
+    end
   end
 end
 
 ---@param mode WinModeWithoutAuto
 function M.try_close_win(mode)
-  ui.try_close_win(mode)
+  local panel = ui.get("panel")
+  if panel then
+    panel.try_close_win(mode)
+  end
 end
 
 ---@param mode WinModeWithoutAuto
 function M.toggle_win(mode)
-  local is_open = false
-  if mode == "split" then
-    is_open = ui.is_split_opened()
-  else
-    is_open = ui.is_popup_opened()
-  end
+  local panel = ui.get("panel")
+  if panel then
+    local is_open = false
+    if mode == "split" then
+      is_open = panel.is_split_opened()
+    else
+      is_open = panel.is_popup_opened()
+    end
 
-  if is_open then
-    M.try_close_win(mode)
-  else
-    M.try_open_win(mode)
+    if is_open then
+      M.try_close_win(mode)
+    else
+      M.try_open_win(mode)
+    end
   end
 end
 

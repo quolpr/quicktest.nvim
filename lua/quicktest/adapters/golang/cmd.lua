@@ -42,7 +42,7 @@ function M.build_args(module, func_names, sub_func_names, additional_args)
   if run_arg then
     table.insert(args, string.format("-run=%s", run_arg))
   end
-  
+
   table.insert(args, "-v")
   table.insert(args, "-json")
 
@@ -57,12 +57,12 @@ end
 --- @return string[]
 function M.build_dap_args(func_names, sub_func_names, additional_args)
   local test_args = {}
-  
+
   local run_arg = build_run_arg(func_names, sub_func_names)
   if run_arg then
     table.insert(test_args, "-test.run=" .. run_arg)
   end
-  
+
   table.insert(test_args, "-test.v")
   test_args = vim.list_extend(test_args, additional_args)
 

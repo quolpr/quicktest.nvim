@@ -1,5 +1,4 @@
-local ui = require("quicktest.ui")
-local colorized_printer = require("quicktest.colored_printer")
+local storage = require("quicktest.storage")
 local notify = require("quicktest.notify")
 local a = require("plenary.async")
 local u = require("plenary.async.util")
@@ -18,14 +17,10 @@ M.kill_current_run = function()
     vim.system({ "kill", tostring(current_job.pid) }):wait()
     current_job = nil
 
-    for _, buf in ipairs(ui.get_buffers()) do
-      local line_count = vim.api.nvim_buf_line_count(buf)
-      local passedTime = vim.loop.now() - job.started_at
-      local time_display = string.format("%.2f", passedTime / 1000) .. "s"
-
-      vim.api.nvim_buf_set_lines(buf, line_count - 1, line_count, false, { "Cancelled after " .. time_display })
-      vim.api.nvim_buf_add_highlight(buf, -1, "DiagnosticWarn", line_count - 1, 0, -1)
-    end
+    local passedTime = vim.loop.now() - job.started_at
+    local time_display = string.format("%.2f", passedTime / 1000) .. "s"
+    
+    storage.test_output("status", "Cancelled after " .. time_display)
   end
 end
 
@@ -43,20 +38,8 @@ M.run = function(adapter, params, config, opts)
     end
   end
 
-  --- @param buf integer
-  --- @param start integer
-  --- @param finish number
-  --- @param strict_indexing boolean
-  --- @param replacements string[]
-  local set_ansi_lines = function(buf, start, finish, strict_indexing, replacements)
-    local new_lines = {}
-    for i, line in ipairs(replacements) do
-      new_lines[i] = string.gsub(line, "[\27\155][][()#;?%d]*[A-PRZcf-ntqry=><~]", "")
-    end
-    vim.api.nvim_buf_set_lines(buf, start, finish, strict_indexing, new_lines)
-  end
-
-  local printer = colorized_printer.new()
+  -- Clear storage for new run
+  storage.clear()
 
   --- @type {id: number, started_at: number, pid: number?, exit_code: number?}
   local job = { id = math.random(10000000000000000), started_at = vim.uv.now() }
@@ -66,35 +49,6 @@ M.run = function(adapter, params, config, opts)
     return current_job and job.id == current_job.id
   end
 
-  local print_status = function()
-    for _, buf in ipairs(ui.get_buffers()) do
-      local line_count = vim.api.nvim_buf_line_count(buf)
-
-      local passedTime = vim.loop.now() - job.started_at
-      local time_display = string.format("%.2f", passedTime / 1000) .. "s"
-
-      if job.exit_code == nil then
-        vim.api.nvim_buf_set_lines(buf, line_count - 1, line_count, false, {
-          "Running " .. time_display,
-        })
-        vim.api.nvim_buf_add_highlight(buf, -1, "DiagnosticInfo", line_count - 1, 0, -1)
-      else
-        if job.exit_code ~= 0 then
-          vim.api.nvim_buf_set_lines(buf, line_count - 1, line_count, false, { "Failed " .. time_display })
-          vim.api.nvim_buf_add_highlight(buf, -1, "DiagnosticError", line_count - 1, 0, -1)
-        else
-          vim.api.nvim_buf_set_lines(buf, line_count - 1, line_count, false, { "Passed " .. time_display })
-          vim.api.nvim_buf_add_highlight(buf, -1, "DiagnosticOk", line_count - 1, 0, -1)
-        end
-      end
-    end
-  end
-
-  for _, buf in ipairs(ui.get_buffers()) do
-    vim.api.nvim_buf_set_lines(buf, 0, -1, false, {})
-    ui.scroll_down(buf)
-  end
-
   local runLoop = function()
     local sender, receiver = a.control.channel.mpsc()
     local pid = adapter.run(params, function(data)
@@ -102,36 +56,22 @@ M.run = function(adapter, params, config, opts)
     end)
     job.pid = pid
 
+    -- Start test event
+    local test_name = "Test"
+    local test_location = ""
+    
     if adapter.title then
-      local title = adapter.title(params)
-      for _, buf in ipairs(ui.get_buffers()) do
-        vim.api.nvim_buf_set_lines(buf, 0, -1, false, {
-          title,
-          "",
-          "",
-          "",
-        })
-        ui.scroll_down(buf)
-      end
-    else
-      for _, buf in ipairs(ui.get_buffers()) do
-        vim.api.nvim_buf_set_lines(buf, 0, -1, false, {
-          "",
-          "",
-        })
+      test_name = adapter.title(params)
+    end
+    
+    if params and params.bufnr then
+      test_location = vim.api.nvim_buf_get_name(params.bufnr)
+      if params.line_number then
+        test_location = test_location .. ":" .. params.line_number
       end
     end
-
-    ---@diagnostic disable-next-line: missing-parameter
-    a.run(function()
-      while is_running() do
-        print_status()
-        u.sleep(100)
-      end
-    end)
-
-    local last_update_time = 0
-    local update_interval = 100 -- ms
+    
+    storage.test_started(test_name, test_location)
 
     local results = {}
     while is_running() do
@@ -146,63 +86,27 @@ M.run = function(adapter, params, config, opts)
 
       if result.type == "exit" then
         job.exit_code = result.code
-
         current_job = nil
+        
+        -- Emit test finished event
+        local status = result.code == 0 and "passed" or "failed"
+        local duration = vim.uv.now() - job.started_at
+        storage.test_finished(test_name, status, duration)
+        
         if adapter.after_run then
           adapter.after_run(params, results)
         end
+      elseif result.type == "stdout" and result.output then
+        storage.test_output("stdout", result.output)
+      elseif result.type == "stderr" and result.output then
+        storage.test_output("stderr", result.output)
+      elseif result.type == "test_result" then
+        -- Handle individual test results from adapter
+        -- First ensure this test exists in storage (create if needed)
+        storage.test_started(result.test_name, result.location or "")
+        -- Then mark it as finished
+        storage.test_finished(result.test_name, result.status, nil, result.location)
       end
-
-      for _, buf in ipairs(ui.get_buffers()) do
-        local should_scroll = ui.should_continue_scroll(buf)
-
-        if result.type == "stdout" then
-          if result.output then
-            local lines = vim.split(result.output, "\n")
-
-            table.insert(lines, "")
-            table.insert(lines, "")
-
-            if config.use_builtin_colorizer then
-              printer:set_next_lines(lines, buf, 2)
-            else
-              local line_count = vim.api.nvim_buf_line_count(buf)
-              set_ansi_lines(buf, line_count - 2, -1, false, lines)
-            end
-          end
-        end
-
-        if result.type == "stderr" then
-          if result.output then
-            local line_count = vim.api.nvim_buf_line_count(buf)
-            local lines = vim.split(result.output, "\n")
-
-            table.insert(lines, "")
-            table.insert(lines, "")
-            if #lines > 0 then
-              set_ansi_lines(buf, line_count - 2, -1, false, lines)
-
-              for i = 0, #lines - 1 do
-                vim.api.nvim_buf_add_highlight(buf, -1, "DiagnosticError", line_count - 2 + i, 0, -1)
-              end
-            end
-          end
-        end
-
-        local current_time = vim.loop.now()
-        if (current_time - last_update_time) > update_interval then
-          u.scheduler(function()
-            vim.cmd("redraw")
-          end)
-          last_update_time = current_time
-        end
-
-        if should_scroll then
-          ui.scroll_down(buf)
-        end
-      end
-
-      print_status()
     end
   end
 
@@ -242,4 +146,3 @@ M.run = function(adapter, params, config, opts)
 end
 
 return M
-

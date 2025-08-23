@@ -29,6 +29,39 @@ local function find_cwd(bufnr)
   return fs.find_ancestor_of_file(path, "go.mod")
 end
 
+-- Find the file containing a specific test function
+---@param test_name string
+---@param cwd string
+---@param module_path string
+---@return string?, integer?
+local function find_test_location(test_name, cwd, module_path)
+  -- Build the search path
+  local search_path = cwd
+  if module_path and module_path ~= "." and module_path ~= "./..." then
+    search_path = cwd .. "/" .. module_path:gsub("^%./", "")
+  end
+
+  -- Find all _test.go files in the target directory
+  local test_files = vim.fn.glob(search_path .. "/*_test.go", false, true)
+
+  for _, file_path in ipairs(test_files) do
+    -- Check if file exists and is readable
+    if vim.fn.filereadable(file_path) == 1 then
+      -- Create a temporary buffer to search in
+      local temp_bufnr = vim.fn.bufadd(file_path)
+      vim.fn.bufload(temp_bufnr)
+
+      -- Try to find the test function in this file
+      local line_no = ts.get_func_def_line_no(temp_bufnr, test_name)
+      if line_no then
+        return file_path, line_no + 1 -- Convert from 0-based to 1-based
+      end
+    end
+  end
+
+  return nil, nil
+end
+
 ---@param cwd string
 ---@param bufnr integer
 ---@return string | nil
@@ -40,7 +73,7 @@ local function get_module_path(cwd, bufnr)
 
   -- Check if the file_path starts with the cwd and extract the relative part
   if string.sub(file_path, 1, #cwd) == cwd then
-    local relative_path = string.sub(file_path, #cwd + 2) -- +2 to remove the leading slash
+    local relative_path = string.sub(file_path, #cwd + 2)               -- +2 to remove the leading slash
     local module_path = "./" .. vim.fn.fnamemodify(relative_path, ":h") -- Get directory path without filename
     return module_path
   else
@@ -93,15 +126,15 @@ M.build_file_run_params = function(bufnr, cursor_pos, opts)
   end
 
   return {
-    func_names = func_names,
-    sub_func_names = {},
-    cwd = cwd,
-    module = module,
-    bufnr = bufnr,
-    cursor_pos = cursor_pos,
-    opts = opts,
-  },
-    nil
+        func_names = func_names,
+        sub_func_names = {},
+        cwd = cwd,
+        module = module,
+        bufnr = bufnr,
+        cursor_pos = cursor_pos,
+        opts = opts,
+      },
+      nil
 end
 
 ---@param bufnr integer
@@ -124,15 +157,15 @@ M.build_line_run_params = function(bufnr, cursor_pos, opts)
   end
 
   return {
-    func_names = func_names,
-    sub_func_names = sub_func_names,
-    cwd = cwd,
-    module = module,
-    bufnr = bufnr,
-    cursor_pos = cursor_pos,
-    opts = opts,
-  },
-    nil
+        func_names = func_names,
+        sub_func_names = sub_func_names,
+        cwd = cwd,
+        module = module,
+        bufnr = bufnr,
+        cursor_pos = cursor_pos,
+        opts = opts,
+      },
+      nil
 end
 
 ---@param bufnr integer
@@ -144,15 +177,15 @@ M.build_all_run_params = function(bufnr, cursor_pos, opts)
   local module = "./..."
 
   return {
-    func_names = {},
-    sub_func_names = {},
-    cwd = cwd,
-    module = module,
-    bufnr = bufnr,
-    cursor_pos = cursor_pos,
-    opts = opts,
-  },
-    nil
+        func_names = {},
+        sub_func_names = {},
+        cwd = cwd,
+        module = module,
+        bufnr = bufnr,
+        cursor_pos = cursor_pos,
+        opts = opts,
+      },
+      nil
 end
 
 ---@param bufnr integer
@@ -164,15 +197,15 @@ M.build_dir_run_params = function(bufnr, cursor_pos, opts)
   local module = get_module_path(cwd, bufnr) or "."
 
   return {
-    func_names = {},
-    sub_func_names = {},
-    cwd = cwd,
-    module = module,
-    bufnr = bufnr,
-    cursor_pos = cursor_pos,
-    opts = opts,
-  },
-    nil
+        func_names = {},
+        sub_func_names = {},
+        cwd = cwd,
+        module = module,
+        bufnr = bufnr,
+        cursor_pos = cursor_pos,
+        opts = opts,
+      },
+      nil
 end
 
 ---@param params GoRunParams
@@ -181,7 +214,7 @@ end
 M.run = function(params, send)
   local additional_args = M.options.additional_args and M.options.additional_args(params.bufnr) or {}
   additional_args = params.opts.additional_args and vim.list_extend(additional_args, params.opts.additional_args)
-    or additional_args
+      or additional_args
 
   local args = cmd.build_args(params.module, params.func_names, params.sub_func_names, additional_args)
   args = M.options.args and M.options.args(params.bufnr, args) or args
@@ -204,8 +237,23 @@ M.run = function(params, send)
 
       if not status then
         send({ type = "stdout", raw = data, output = data })
-
         return
+      end
+
+      -- Handle individual test results
+      if res.Action == "fail" and res.Test then
+        -- Send test result without location for now (avoid fast event context)
+        send({
+          type = "test_result",
+          test_name = res.Test,
+          status = "failed"
+        })
+      elseif res.Action == "pass" and res.Test then
+        send({
+          type = "test_result",
+          test_name = res.Test,
+          status = "passed"
+        })
       end
 
       if res.Output and res.Output ~= "" then
@@ -214,7 +262,6 @@ M.run = function(params, send)
 
       if string.find(current_out, "\n") then
         local out = current_out:gsub("\n", "")
-
         current_out = ""
         send({ type = "stdout", raw = data, decoded = res, output = out })
       end
@@ -238,7 +285,7 @@ end
 M.title = function(params)
   local additional_args = M.options.additional_args and M.options.additional_args(params.bufnr) or {}
   additional_args = params.opts.additional_args and vim.list_extend(additional_args, params.opts.additional_args)
-    or additional_args
+      or additional_args
 
   local args = cmd.build_args(params.module, params.func_names, params.sub_func_names, additional_args)
   args = M.options.args and M.options.args(params.bufnr, args) or args
@@ -250,8 +297,21 @@ end
 ---@param results CmdData[]
 M.after_run = function(params, results)
   local diagnostics = {}
+  local storage = require("quicktest.storage")
 
+  -- Process test results and update storage with precise locations
   for _, result in ipairs(results) do
+    if result.type == "test_result" and result.status == "failed" then
+      -- Find the actual test file and line (safe to call here, not in fast event)
+      local file_path, line_no = find_test_location(result.test_name, params.cwd, params.module)
+      local location = file_path and line_no and (file_path .. ":" .. line_no) or nil
+
+      -- Always update storage, with or without location (test was already marked finished in default strategy)
+      -- This just updates the location if we found it
+      storage.test_finished(result.test_name, "failed", nil, location)
+    end
+
+    -- Keep existing diagnostic logic for backward compatibility
     if result.type == "stdout" then
       --- @type GoLogEntry
       local decoded = result.decoded
@@ -301,11 +361,18 @@ end
 
 ---@param bufnr integer
 ---@param params GoRunParams
----@return table
+---@return table?
 M.build_dap_config = function(bufnr, params)
+  if params.module == "./..." then
+    vim.notify(
+      "DAP strategy cannot debug 'all tests' across multiple packages. Use run_dir on a specific package or switch to default strategy.",
+      vim.log.levels.ERROR)
+    return
+  end
+
   local additional_args = M.options.additional_args and M.options.additional_args(bufnr) or {}
   additional_args = params.opts.additional_args and vim.list_extend(additional_args, params.opts.additional_args)
-    or additional_args
+      or additional_args
 
   local test_args = cmd.build_dap_args(params.func_names, params.sub_func_names, additional_args)
 
@@ -317,7 +384,7 @@ M.build_dap_config = function(bufnr, params)
     name = "Debug Test",
     request = "launch",
     mode = "test",
-    program = params.module == "./..." and "." or params.module,
+    program = params.module,
     args = test_args,
     env = env,
     cwd = params.cwd,

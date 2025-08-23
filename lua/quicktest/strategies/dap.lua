@@ -1,6 +1,10 @@
+local storage = require("quicktest.storage")
+
 local M = {
   name = "dap"
 }
+
+local default_test_name = "DAP Test"
 
 M.is_available = function()
   local ok, dap = pcall(require, "dap")
@@ -18,6 +22,7 @@ M.run = function(adapter, params, config, opts)
   end
 
   local dap = require("dap")
+  storage.clear()
   
   local handler_id = "quicktest_" .. vim.fn.localtime()
   local output_data = {}
@@ -29,6 +34,9 @@ M.run = function(adapter, params, config, opts)
   
   local function write_output(data)
     table.insert(output_data, data)
+    -- Also emit to storage
+    storage.test_output("stdout", data)
+    
     if output_fd then
       local write_err, _ = vim.uv.fs_write(output_fd, data)
       if write_err then
@@ -47,6 +55,11 @@ M.run = function(adapter, params, config, opts)
 
   local dap_config = adapter.build_dap_config(params.bufnr, params)
   
+  -- Emit test started event
+  local test_name = dap_config.name or default_test_name 
+  local test_location = vim.api.nvim_buf_get_name(params.bufnr)
+  storage.test_started(test_name, test_location)
+  
   -- Get filetype for DAP configuration
   local test_bufnr = vim.fn.bufnr(params.bufnr)
   local filetype = vim.api.nvim_buf_get_option(test_bufnr, "filetype")
@@ -63,6 +76,11 @@ M.run = function(adapter, params, config, opts)
       dap.listeners.after.event_exited[handler_id] = function(_, info)
         result_code = info.exitCode
         is_finished = true
+        
+        -- Emit test finished event
+        local status = info.exitCode == 0 and "passed" or "failed"
+        storage.test_finished(test_name, status, nil) -- DAP doesn't track duration directly
+        
         if output_fd then
           vim.uv.fs_close(output_fd)
         end
@@ -75,6 +93,10 @@ M.run = function(adapter, params, config, opts)
       if not received_exit then
         result_code = 0
         is_finished = true
+        
+        -- Emit test finished event if not already emitted
+        storage.test_finished(test_name, "passed", nil)
+        
         if output_fd then
           vim.uv.fs_close(output_fd)
         end
@@ -106,6 +128,10 @@ M.run = function(adapter, params, config, opts)
       if not is_finished then
         result_code = -1
         is_finished = true
+        
+        -- Emit cancelled/stopped event
+        storage.test_finished(test_name, "failed", nil)
+        
         if output_fd then
           vim.uv.fs_close(output_fd)
         end
