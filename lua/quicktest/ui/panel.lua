@@ -9,7 +9,7 @@ local M = {}
 local api = vim.api
 local printer = colorized_printer.new()
 local storage_subscription = nil
-local has_started = false  -- Track if we've already started
+local has_started = false -- Track if we've already started
 
 local function find_win_by_bufnr(bufnr)
   for _, win in ipairs(vim.api.nvim_list_wins()) do
@@ -37,10 +37,10 @@ local function get_or_create_buf(name)
     vim.bo[buf].undolevels = -1
     vim.bo[buf].filetype = "quicktest-output"
     vim.bo[buf].swapfile = false
-    vim.bo[buf].buftype = "nofile"  -- Changed to nofile - not a real file
-    vim.bo[buf].bufhidden = "hide"  -- Hide when not displayed
-    vim.bo[buf].buflisted = false   -- Don't list in buffer list
-    vim.bo[buf].modified = false -- Start as unmodified
+    vim.bo[buf].buftype = "nofile" -- Changed to nofile - not a real file
+    vim.bo[buf].bufhidden = "hide" -- Hide when not displayed
+    vim.bo[buf].buflisted = false  -- Don't list in buffer list
+    vim.bo[buf].modified = false   -- Start as unmodified
 
     -- Add autocmd to prevent modification flag
     vim.api.nvim_create_autocmd({ "TextChanged", "TextChangedI", "BufModifiedSet" }, {
@@ -94,10 +94,26 @@ M.is_popup_opened = function()
   return is_buf_visible(get_popup_buf())
 end
 
+local function add_autocmd(winid, buf)
+  vim.api.nvim_create_autocmd("BufWinEnter", {
+    callback = function(args)
+      local win = vim.fn.bufwinid(args.buf)
+      if win == winid and args.buf ~= buf then
+        -- Buffer is being opened in our panel window, restore the correct buffer
+        vim.schedule(function()
+          if vim.api.nvim_win_is_valid(winid) then
+            vim.api.nvim_win_set_buf(winid, buf)
+          end
+        end)
+        return true
+      end
+    end,
+  })
+end
 
 local function open_popup()
   local popup_options = vim.tbl_deep_extend("force", {
-    enter = false,  -- Don't enter the popup window by default
+    enter = false, -- Don't enter the popup window by default
     bufnr = get_popup_buf(),
     focusable = false,
     border = {
@@ -112,29 +128,16 @@ local function open_popup()
 
   local popup = Popup(popup_options)
   popup:mount()
-  
+
   -- Configure window to be less attractive for buffer switching
   if popup.winid and vim.api.nvim_win_is_valid(popup.winid) then
     -- Mark window as special/utility window
     vim.w[popup.winid].quicktest_panel = true
-    -- Set window as "previewwindow" - Neovim avoids these for normal buffer operations  
+    -- Set window as "previewwindow" - Neovim avoids these for normal buffer operations
     vim.api.nvim_win_set_option(popup.winid, 'previewwindow', true)
-    
+
     -- Add autocmd to prevent buffer switching in this window
-    vim.api.nvim_create_autocmd("BufWinEnter", {
-      callback = function(args)
-        local win = vim.fn.bufwinid(args.buf)
-        if win == popup.winid and args.buf ~= get_popup_buf() then
-          -- Buffer is being opened in our panel window, restore the correct buffer
-          vim.schedule(function()
-            if vim.api.nvim_win_is_valid(popup.winid) then
-              vim.api.nvim_win_set_buf(popup.winid, get_popup_buf())
-            end
-          end)
-          return true
-        end
-      end,
-    })
+    add_autocmd(popup.winid, get_popup_buf())
   end
 end
 
@@ -150,29 +153,16 @@ local function open_split()
 
   split.bufnr = get_split_buf()
   split:mount()
-  
+
   -- Configure window to be less attractive for buffer switching
   if split.winid and vim.api.nvim_win_is_valid(split.winid) then
     -- Mark window as special/utility window
     vim.w[split.winid].quicktest_panel = true
     -- Set window as "previewwindow" - Neovim avoids these for normal buffer operations
     vim.api.nvim_win_set_option(split.winid, 'previewwindow', true)
-    
+
     -- Add autocmd to prevent buffer switching in this window
-    vim.api.nvim_create_autocmd("BufWinEnter", {
-      callback = function(args)
-        local win = vim.fn.bufwinid(args.buf)
-        if win == split.winid and args.buf ~= get_split_buf() then
-          -- Buffer is being opened in our panel window, restore the correct buffer
-          vim.schedule(function()
-            if vim.api.nvim_win_is_valid(split.winid) then
-              vim.api.nvim_win_set_buf(split.winid, get_split_buf())
-            end
-          end)
-          return true
-        end
-      end,
-    })
+    add_autocmd(split.winid, get_split_buf())
   end
 end
 
@@ -247,7 +237,7 @@ function M.init()
   if storage_subscription then
     return -- Already initialized
   end
-  
+
   storage_subscription = function(event_type, data)
     if event_type == 'test_output' then
       M.handle_output(data)
@@ -265,7 +255,7 @@ function M.init()
       M.show_result(data)
     end
   end
-  
+
   storage.subscribe(storage_subscription)
 end
 
@@ -274,7 +264,7 @@ function M.cleanup()
   if storage_subscription then
     storage.unsubscribe(storage_subscription)
     storage_subscription = nil
-    has_started = false  -- Reset for next run
+    has_started = false -- Reset for next run
   end
 end
 
@@ -303,15 +293,15 @@ end
 -- Handle output from storage
 function M.handle_output(output_data)
   local use_builtin_colorizer = require("quicktest").config.use_builtin_colorizer
-  
+
   for _, buf in ipairs(M.get_buffers()) do
     local should_scroll = M.should_continue_scroll(buf)
-    
+
     if output_data.type == "stdout" then
       local lines = vim.split(output_data.data, "\n")
       table.insert(lines, "")
       table.insert(lines, "")
-      
+
       if use_builtin_colorizer then
         printer:set_next_lines(lines, buf, 2)
       else
@@ -326,7 +316,7 @@ function M.handle_output(output_data)
       local lines = vim.split(output_data.data, "\n")
       table.insert(lines, "")
       table.insert(lines, "")
-      
+
       if #lines > 0 then
         local line_count = vim.api.nvim_buf_line_count(buf)
         local new_lines = {}
@@ -334,7 +324,7 @@ function M.handle_output(output_data)
           new_lines[i] = string.gsub(line, "[\27\155][][()#;?%d]*[A-PRZcf-ntqry=><~]", "")
         end
         vim.api.nvim_buf_set_lines(buf, line_count - 2, -1, false, new_lines)
-        
+
         for i = 0, #lines - 1 do
           vim.api.nvim_buf_add_highlight(buf, -1, "DiagnosticError", line_count - 2 + i, 0, -1)
         end
@@ -344,7 +334,7 @@ function M.handle_output(output_data)
       vim.api.nvim_buf_set_lines(buf, line_count - 1, line_count, false, { output_data.data })
       vim.api.nvim_buf_add_highlight(buf, -1, "DiagnosticWarn", line_count - 1, 0, -1)
     end
-    
+
     if should_scroll then
       M.scroll_down(buf)
     end
@@ -355,7 +345,7 @@ end
 function M.show_result(result_data)
   local status_text = ""
   local highlight_group = ""
-  
+
   if result_data.duration then
     local time_display = string.format("%.2f", result_data.duration / 1000) .. "s"
     if result_data.status == "passed" then
@@ -366,7 +356,7 @@ function M.show_result(result_data)
       highlight_group = "DiagnosticError"
     end
   end
-  
+
   if status_text ~= "" then
     for _, buf in ipairs(M.get_buffers()) do
       local line_count = vim.api.nvim_buf_line_count(buf)
