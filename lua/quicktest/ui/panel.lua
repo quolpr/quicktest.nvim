@@ -119,6 +119,22 @@ local function open_popup()
     vim.w[popup.winid].quicktest_panel = true
     -- Set window as "previewwindow" - Neovim avoids these for normal buffer operations  
     vim.api.nvim_win_set_option(popup.winid, 'previewwindow', true)
+    
+    -- Add autocmd to prevent buffer switching in this window
+    vim.api.nvim_create_autocmd("BufWinEnter", {
+      callback = function(args)
+        local win = vim.fn.bufwinid(args.buf)
+        if win == popup.winid and args.buf ~= get_popup_buf() then
+          -- Buffer is being opened in our panel window, restore the correct buffer
+          vim.schedule(function()
+            if vim.api.nvim_win_is_valid(popup.winid) then
+              vim.api.nvim_win_set_buf(popup.winid, get_popup_buf())
+            end
+          end)
+          return true
+        end
+      end,
+    })
   end
 end
 
@@ -128,6 +144,7 @@ local function open_split()
     position = "bottom",
     size = "30%",
     enter = false,
+    focusable = false,
     bufnr = get_split_buf(),
   })
 
@@ -140,6 +157,22 @@ local function open_split()
     vim.w[split.winid].quicktest_panel = true
     -- Set window as "previewwindow" - Neovim avoids these for normal buffer operations
     vim.api.nvim_win_set_option(split.winid, 'previewwindow', true)
+    
+    -- Add autocmd to prevent buffer switching in this window
+    vim.api.nvim_create_autocmd("BufWinEnter", {
+      callback = function(args)
+        local win = vim.fn.bufwinid(args.buf)
+        if win == split.winid and args.buf ~= get_split_buf() then
+          -- Buffer is being opened in our panel window, restore the correct buffer
+          vim.schedule(function()
+            if vim.api.nvim_win_is_valid(split.winid) then
+              vim.api.nvim_win_set_buf(split.winid, get_split_buf())
+            end
+          end)
+          return true
+        end
+      end,
+    })
   end
 end
 

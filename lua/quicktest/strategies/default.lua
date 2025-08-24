@@ -106,6 +106,15 @@ M.run = function(adapter, params, config, opts)
         storage.test_started(result.test_name, result.location or "")
         -- Then mark it as finished
         storage.test_finished(result.test_name, result.status, nil, result.location)
+      elseif result.type == "assert_failure" then
+        -- Handle assert failure location information
+        storage.assert_failure(result.test_name, result.full_path, result.line, result.message)
+      elseif result.type == "assert_error" then
+        -- Handle assert error message (main error description)
+        storage.assert_error(result.test_name, result.message)
+      elseif result.type == "assert_message" then
+        -- Handle assert failure message to override previous message
+        storage.assert_message(result.test_name, result.message)
       end
     end
   end

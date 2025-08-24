@@ -57,14 +57,39 @@ function M.cleanup_all()
 end
 
 -- Auto-register built-in UI consumers
-local function auto_register()
+local function auto_register(config)
   local panel = require("quicktest.ui.panel")
   M.register("panel", panel)
-  local quickfix = require("quicktest.ui.quickfix")
-  M.register("quickfix", quickfix)
+  
+  -- Only register quickfix if enabled
+  if not config or config.quickfix.enabled then
+    local quickfix = require("quicktest.ui.quickfix")
+    quickfix.config = config and config.quickfix or { enabled = true, open = true }
+    M.register("quickfix", quickfix)
+  end
+  
+  -- Only register diagnostics if enabled
+  if not config or config.diagnostics.enabled then
+    local diagnostics = require("quicktest.ui.diagnostics")
+    diagnostics.config = config and config.diagnostics or { enabled = true }
+    M.register("diagnostics", diagnostics)
+  end
 end
 
--- Initialize the UI system
+-- Initialize the UI system with config
+---@param config QuicktestConfig?
+function M.init_with_config(config)
+  -- Cleanup existing consumers first
+  M.cleanup_all()
+  
+  -- Clear registry
+  ui_consumers = {}
+  
+  -- Re-register with new config
+  auto_register(config)
+end
+
+-- Initialize the UI system (backwards compatibility)
 auto_register()
 
 return M

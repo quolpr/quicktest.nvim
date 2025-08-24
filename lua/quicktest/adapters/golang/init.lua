@@ -254,6 +254,44 @@ M.run = function(params, send)
           test_name = res.Test,
           status = "passed"
         })
+      elseif res.Action == "output" and res.Test and res.Output then
+        -- Parse assert failure locations and messages from output
+        -- Pattern 2: "Error Trace:" with full path - most important for location  
+        -- Pattern: "        \tError Trace:\t/path/file.go:123\n"
+        local full_path, line_str = res.Output:match("Error Trace:%s*\t([^:]+):(%d+)")
+        if full_path and line_str then
+          local line_no = tonumber(line_str)
+          send({
+            type = "assert_failure",
+            test_name = res.Test,
+            full_path = full_path,
+            line = line_no,
+            message = ""
+          })
+        end
+        
+        -- Parse "Error:" field to get the main error message
+        -- Pattern: "        \tError:          Should be true\n"
+        local error_message = res.Output:match("Error:%s*([^\n]+)")
+        if error_message then
+          error_message = error_message:gsub("^%s+", ""):gsub("%s+$", "") -- trim whitespace
+          send({
+            type = "assert_error", 
+            test_name = res.Test,
+            message = error_message
+          })
+        end
+        
+        -- Pattern 3: "Messages:" to get the additional message
+        -- Pattern: "        \tMessages:   \tmess\n"
+        local assert_message = res.Output:match("Messages:%s*\t([^\n]+)")
+        if assert_message then
+          send({
+            type = "assert_message", 
+            test_name = res.Test,
+            message = assert_message:gsub("^%s+", ""):gsub("%s+$", "") -- trim whitespace
+          })
+        end
       end
 
       if res.Output and res.Output ~= "" then

@@ -37,6 +37,8 @@ local M = {}
 ---@field default_win_mode WinModeWithoutAuto
 ---@field use_builtin_colorizer boolean
 ---@field strategy? 'default' | 'dap' | fun(adapter: QuicktestAdapter): string
+---@field quickfix? {enabled: boolean, open: boolean}
+---@field diagnostics? {enabled: boolean}
 
 --- @type {[string]: {type: string, adapter_name: string, bufname: string, cursor_pos: integer[]}} | nil
 local previous_run = nil

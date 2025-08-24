@@ -1,6 +1,7 @@
 local storage = require("quicktest.storage")
 
 local M = {}
+M.config = { enabled = true, open = true }
 
 local storage_subscription = nil
 
@@ -52,14 +53,18 @@ function M.update_quickfix()
     end
   end
   
-  -- Update quickfix - open if failures, close if no failures
+  -- Update quickfix - open if failures and config.open is true
   if #qf_items > 0 then
     vim.fn.setqflist(qf_items, "r")
-    vim.cmd("copen")
+    if M.config.open then
+      vim.cmd("copen")
+    end
   else
-    -- Clear and close quickfix when no failures
+    -- Clear and close quickfix when no failures (only if config.open is true)
     vim.fn.setqflist({}, "r")
-    vim.cmd("cclose")
+    if M.config.open then
+      vim.cmd("cclose")
+    end
   end
 end
 

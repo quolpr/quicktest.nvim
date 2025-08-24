@@ -87,6 +87,66 @@ M.run = function(adapter, params, config, opts)
         local location = find_test_location_dap(test_name, adapter, params)
         storage.test_finished(test_name, test_status, nil, location)
       end
+      
+      -- Parse assert failure locations and messages from output (same as Go adapter)
+      
+      -- Pattern 2: "Error Trace:" with full path - most important for location
+      local full_path, line_str = line:match("Error Trace:%s*([^:]+):(%d+)")
+      if full_path and line_str then
+        local line_no = tonumber(line_str)
+        -- We need to associate this with the currently running test
+        -- Find the most recent test that started but hasn't finished yet
+        local current_test = nil
+        local results = storage.get_current_results()
+        for i = #results, 1, -1 do
+          if results[i].status == "running" then
+            current_test = results[i].name
+            break
+          end
+        end
+        
+        if current_test then
+          storage.assert_failure(current_test, full_path, line_no, "")
+        end
+      end
+      
+      -- Parse "Error:" field to get the main error message
+      local error_message = line:match("Error:%s*(.+)$")
+      if error_message then
+        error_message = error_message:gsub("^%s+", ""):gsub("%s+$", "") -- trim whitespace
+        -- Associate with the most recent test that started but hasn't finished yet
+        local current_test = nil
+        local results = storage.get_current_results()
+        for i = #results, 1, -1 do
+          if results[i].status == "running" then
+            current_test = results[i].name
+            break
+          end
+        end
+        
+        if current_test then
+          storage.assert_error(current_test, error_message)
+        end
+      end
+      
+      -- Pattern 3: "Messages:" to get the additional message
+      local assert_message = line:match("Messages:%s*(.+)$")
+      if assert_message then
+        assert_message = assert_message:gsub("^%s+", ""):gsub("%s+$", "") -- trim whitespace
+        -- Associate with the most recent test that has assert failures
+        local current_test = nil
+        local results = storage.get_current_results()
+        for i = #results, 1, -1 do
+          if results[i].assert_failures and #results[i].assert_failures > 0 then
+            current_test = results[i].name
+            break
+          end
+        end
+        
+        if current_test then
+          storage.assert_message(current_test, assert_message)
+        end
+      end
     end
 
     if output_fd then

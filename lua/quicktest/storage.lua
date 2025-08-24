@@ -6,6 +6,13 @@ local M = {}
 ---@field status 'running' | 'passed' | 'failed'
 ---@field duration number?
 ---@field timestamp number
+---@field assert_failures AssertFailure[]?
+
+---@class AssertFailure
+---@field full_path string
+---@field line number
+---@field message string
+---@field error_message string?
 
 ---@class OutputLine
 ---@field type 'stdout' | 'stderr' | 'status'
@@ -131,6 +138,111 @@ function M.get_current_output()
 end
 
 -- Get current run summary
+-- Add assert failure information to a test
+---@param test_name string
+---@param full_path string
+---@param line number
+---@param message string
+function M.assert_failure(test_name, full_path, line, message)
+  -- Look for existing test
+  local found_result = nil
+  for _, result in ipairs(current_state.test_results) do
+    if result.name == test_name then
+      found_result = result
+      break
+    end
+  end
+  
+  -- If test doesn't exist, create it
+  if not found_result then
+    found_result = {
+      name = test_name,
+      location = full_path .. ":" .. line, -- Use assert location as test location
+      status = 'running',
+      duration = nil,
+      timestamp = vim.uv.now(),
+      assert_failures = {}
+    }
+    table.insert(current_state.test_results, found_result)
+    emit_event('test_started', found_result)
+  end
+  
+  -- Now add the assert failure to the test
+  if not found_result.assert_failures then
+    found_result.assert_failures = {}
+  end
+  
+  -- Check if we already have a failure at this location
+  local existing = nil
+  for _, failure in ipairs(found_result.assert_failures) do
+    if failure.full_path == full_path and failure.line == line then
+      existing = failure
+      break
+    end
+  end
+  
+  if existing then
+    -- Update existing failure
+    existing.message = message
+  else
+    -- Add new failure
+    table.insert(found_result.assert_failures, {
+      full_path = full_path,
+      line = line,
+      message = message
+    })
+  end
+  
+  emit_event('assert_failure', {
+    test_name = test_name,
+    full_path = full_path,
+    line = line,
+    message = message
+  })
+end
+
+-- Update assert failure error message for the latest failure of a test
+---@param test_name string
+---@param error_message string
+function M.assert_error(test_name, error_message)
+  for _, result in ipairs(current_state.test_results) do
+    if result.name == test_name and result.assert_failures and #result.assert_failures > 0 then
+      -- Update the error_message of the most recent assert failure
+      local latest_failure = result.assert_failures[#result.assert_failures]
+      latest_failure.error_message = error_message
+      
+      emit_event('assert_error', {
+        test_name = test_name,
+        error_message = error_message,
+        full_path = latest_failure.full_path,
+        line = latest_failure.line
+      })
+      return
+    end
+  end
+end
+
+-- Update assert failure message for the latest failure of a test
+---@param test_name string
+---@param message string
+function M.assert_message(test_name, message)
+  for _, result in ipairs(current_state.test_results) do
+    if result.name == test_name and result.assert_failures and #result.assert_failures > 0 then
+      -- Update the message of the most recent assert failure
+      local latest_failure = result.assert_failures[#result.assert_failures]
+      latest_failure.message = message
+      
+      emit_event('assert_message', {
+        test_name = test_name,
+        message = message,
+        full_path = latest_failure.full_path,
+        line = latest_failure.line
+      })
+      return
+    end
+  end
+end
+
 ---@return {total: number, running: number, passed: number, failed: number}
 function M.get_run_summary()
   local summary = {

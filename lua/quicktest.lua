@@ -18,6 +18,13 @@ local config = {
       height = "60%",
     },
   },
+  quickfix = {
+    enabled = true,
+    open = true,
+  },
+  diagnostics = {
+    enabled = true,
+  },
 }
 
 ---@class MyModule
@@ -29,6 +36,10 @@ M.config = config
 ---@param args QuicktestConfig?
 M.setup = function(args)
   M.config = vim.tbl_deep_extend("force", M.config, args or {})
+  
+  -- Initialize UI with the new config
+  local ui = require("quicktest.ui")
+  ui.init_with_config(M.config)
 end
 
 M.current_win_mode = function()
