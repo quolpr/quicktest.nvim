@@ -25,6 +25,14 @@ local config = {
   diagnostics = {
     enabled = true,
   },
+  summary = {
+    enabled = true,
+    join_to_panel = false,
+  },
+  status = {
+    enabled = true,
+    signs = true,
+  },
 }
 
 ---@class MyModule
@@ -96,6 +104,31 @@ end
 
 M.cancel_current_run = function()
   module.kill_current_run()
+end
+
+-- Summary window controls
+M.open_summary = function()
+  local ui = require("quicktest.ui")
+  local summary = ui.get("summary")
+  if summary then
+    summary.open()
+  end
+end
+
+M.close_summary = function()
+  local ui = require("quicktest.ui")
+  local summary = ui.get("summary")
+  if summary then
+    summary.close()
+  end
+end
+
+M.toggle_summary = function()
+  local ui = require("quicktest.ui")
+  local summary = ui.get("summary")
+  if summary then
+    summary.toggle()
+  end
 end
 
 return M

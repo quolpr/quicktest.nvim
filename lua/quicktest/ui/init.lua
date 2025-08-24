@@ -74,6 +74,20 @@ local function auto_register(config)
     diagnostics.config = config and config.diagnostics or { enabled = true }
     M.register("diagnostics", diagnostics)
   end
+  
+  -- Only register summary if enabled
+  if not config or (config.summary and config.summary.enabled ~= false) then
+    local summary = require("quicktest.ui.summary")
+    summary.config = config and config.summary or { enabled = true, join_to_panel = false }
+    M.register("summary", summary)
+  end
+  
+  -- Only register status if enabled
+  if not config or (config.status and config.status.enabled ~= false) then
+    local status = require("quicktest.ui.status")
+    status.config = config and config.status or { enabled = true, signs = true }
+    M.register("status", status)
+  end
 end
 
 -- Initialize the UI system with config

@@ -3,7 +3,7 @@ local M = {}
 ---@class TestResult
 ---@field name string
 ---@field location string
----@field status 'running' | 'passed' | 'failed'
+---@field status 'running' | 'passed' | 'failed' | 'skipped'
 ---@field duration number?
 ---@field timestamp number
 ---@field assert_failures AssertFailure[]?
@@ -109,7 +109,7 @@ end
 
 -- Mark test as finished
 ---@param name string
----@param status 'passed' | 'failed'
+---@param status 'passed' | 'failed' | 'skipped'
 ---@param duration number?
 ---@param location string?
 function M.test_finished(name, status, duration, location)
@@ -243,13 +243,14 @@ function M.assert_message(test_name, message)
   end
 end
 
----@return {total: number, running: number, passed: number, failed: number}
+---@return {total: number, running: number, passed: number, failed: number, skipped: number}
 function M.get_run_summary()
   local summary = {
     total = #current_state.test_results,
     running = 0,
     passed = 0,
-    failed = 0
+    failed = 0,
+    skipped = 0
   }
 
   for _, result in ipairs(current_state.test_results) do

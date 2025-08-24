@@ -93,6 +93,9 @@ end
 M.is_popup_opened = function()
   return is_buf_visible(get_popup_buf())
 end
+M.get_split_winid = function()
+  return find_win_by_bufnr(get_split_buf())
+end
 
 local function add_autocmd(winid, buf)
   vim.api.nvim_create_autocmd("BufWinEnter", {
@@ -135,6 +138,8 @@ local function open_popup()
     vim.w[popup.winid].quicktest_panel = true
     -- Set window as "previewwindow" - Neovim avoids these for normal buffer operations
     vim.api.nvim_win_set_option(popup.winid, 'previewwindow', true)
+    vim.api.nvim_win_set_option(popup.winid, 'modifiable', false)
+    vim.api.nvim_win_set_option(popup.winid, 'readonly', true)
 
     -- Add autocmd to prevent buffer switching in this window
     add_autocmd(popup.winid, get_popup_buf())
@@ -163,6 +168,17 @@ local function open_split()
 
     -- Add autocmd to prevent buffer switching in this window
     add_autocmd(split.winid, get_split_buf())
+    
+    -- Check if summary should join (avoid circular dependency)
+    vim.schedule(function()
+      local success, ui = pcall(require, "quicktest.ui")
+      if success then
+        local summary = ui.get("summary")
+        if summary and summary.config and summary.config.join_to_panel and summary.create_joined_split then
+          summary.create_joined_split(split.winid)
+        end
+      end
+    end)
   end
 end
 
@@ -181,8 +197,14 @@ end
 ---@param mode WinModeWithoutAuto
 function M.try_open_win(mode)
   if mode == "popup" then
+    if M.is_split_opened() then
+      M.try_close_win("split") -- Close split if open
+    end
     try_open_popup()
-  else
+  else -- mode == "split"
+    if M.is_popup_opened() then
+      M.try_close_win("popup") -- Close popup if open
+    end
     try_open_split()
   end
 end
@@ -197,6 +219,11 @@ function M.try_close_win(mode)
   end
 
   if win_id ~= -1 then
+    -- Check if summary should also be closed
+    local success, summary = pcall(require, "quicktest.ui.summary")
+    if success and summary.config.join_to_panel then
+      summary.close()
+    end
     vim.api.nvim_win_close(win_id, true)
   end
 end

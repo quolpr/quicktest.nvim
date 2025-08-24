@@ -241,8 +241,15 @@ M.run = function(params, send)
       end
 
       -- Handle individual test results
-      if res.Action == "fail" and res.Test then
-        -- Send test result without location for now (avoid fast event context)
+      if res.Action == "run" and res.Test then
+        -- Send test started event when test begins running
+        send({
+          type = "test_started",
+          test_name = res.Test,
+          status = "running"
+        })
+      elseif res.Action == "fail" and res.Test then
+        -- Send test result without location (avoid fast event context)
         send({
           type = "test_result",
           test_name = res.Test,
@@ -253,6 +260,12 @@ M.run = function(params, send)
           type = "test_result",
           test_name = res.Test,
           status = "passed"
+        })
+      elseif res.Action == "skip" and res.Test then
+        send({
+          type = "test_result",
+          test_name = res.Test,
+          status = "skipped"
         })
       elseif res.Action == "output" and res.Test and res.Output then
         -- Parse assert failure locations and messages from output
