@@ -27,6 +27,20 @@ end
 
 local was_buf_initialized = {}
 
+-- Helper function to safely write to a buffer (handles read-only buffers)
+local function safe_buf_write(buf, start_line, end_line, strict_indexing, lines)
+  local was_modifiable = vim.api.nvim_buf_get_option(buf, 'modifiable')
+  local was_readonly = vim.api.nvim_buf_get_option(buf, 'readonly')
+
+  vim.api.nvim_buf_set_option(buf, 'modifiable', true)
+  vim.api.nvim_buf_set_option(buf, 'readonly', false)
+
+  vim.api.nvim_buf_set_lines(buf, start_line, end_line, strict_indexing, lines)
+
+  vim.api.nvim_buf_set_option(buf, 'modifiable', was_modifiable)
+  vim.api.nvim_buf_set_option(buf, 'readonly', was_readonly)
+end
+
 -- Function to get or create a buffer with a specific name
 local function get_or_create_buf(name)
   local full_name = "quicktest://" .. name
@@ -168,7 +182,7 @@ local function open_split()
 
     -- Add autocmd to prevent buffer switching in this window
     add_autocmd(split.winid, get_split_buf())
-    
+
     -- Check if summary should join (avoid circular dependency)
     vim.schedule(function()
       local success, ui = pcall(require, "quicktest.ui")
@@ -182,15 +196,86 @@ local function open_split()
   end
 end
 
+-- Restore buffer content from current storage state
+function M.restore_buffer_content(buf)
+  local output_lines = storage.get_current_output()
+  local current_results = storage.get_current_results()
+
+  if not output_lines or #output_lines == 0 then
+    -- No content to restore, but check if we have test results to show
+    if not current_results or #current_results == 0 then
+      return
+    end
+  end
+
+  -- Find the main test result for title
+  local main_test = nil
+  for _, result in ipairs(current_results) do
+    if result.name and result.name:match("^Running test:") then
+      main_test = result
+      break
+    end
+  end
+
+  -- Set buffer content
+  local lines = {}
+
+  -- Add title if we have a main test
+  if main_test then
+    table.insert(lines, main_test.name .. " (" .. (main_test.location or "") .. ")")
+    table.insert(lines, "")
+  end
+
+  -- Add output lines
+  for _, output_line in ipairs(output_lines) do
+    if output_line.type == "stdout" or output_line.type == "stderr" then
+      local content_lines = vim.split(output_line.data or "", "\n")
+      for _, line in ipairs(content_lines) do
+        table.insert(lines, line)
+      end
+    end
+  end
+
+  -- If no output but we have results, show a summary
+  if #lines <= 2 and current_results and #current_results > 0 then
+    for _, result in ipairs(current_results) do
+      if not result.name:match("^Running test:") then -- Skip the main test entry
+        local status_icon = result.status == "passed" and "✓" or
+            result.status == "failed" and "✗" or
+            result.status == "skipped" and "⊝" or
+            result.status == "running" and "" or "○"
+        table.insert(lines, status_icon .. " " .. result.name)
+      end
+    end
+  end
+
+  -- Add final spacing
+  table.insert(lines, "")
+  table.insert(lines, "")
+
+  -- Set all lines at once using safe write
+  safe_buf_write(buf, 0, -1, false, lines)
+
+  M.scroll_down(buf)
+end
+
 local function try_open_split()
   if not M.is_split_opened() then
     open_split()
+    -- Restore content after opening
+    vim.schedule(function()
+      M.restore_buffer_content(get_split_buf())
+    end)
   end
 end
 
 local function try_open_popup()
   if not M.is_popup_opened() then
     open_popup()
+    -- Restore content after opening
+    vim.schedule(function()
+      M.restore_buffer_content(get_popup_buf())
+    end)
   end
 end
 
@@ -201,7 +286,7 @@ function M.try_open_win(mode)
       M.try_close_win("split") -- Close split if open
     end
     try_open_popup()
-  else -- mode == "split"
+  else                         -- mode == "split"
     if M.is_popup_opened() then
       M.try_close_win("popup") -- Close popup if open
     end
@@ -298,7 +383,7 @@ end
 -- Clear all panel buffers
 function M.clear_buffers()
   for _, buf in ipairs(M.get_buffers()) do
-    vim.api.nvim_buf_set_lines(buf, 0, -1, false, {})
+    safe_buf_write(buf, 0, -1, false, {})
     M.scroll_down(buf)
   end
 end
@@ -307,7 +392,7 @@ end
 function M.show_title(name, location)
   local title = name .. " (" .. location .. ")"
   for _, buf in ipairs(M.get_buffers()) do
-    vim.api.nvim_buf_set_lines(buf, 0, -1, false, {
+    safe_buf_write(buf, 0, -1, false, {
       title,
       "",
       "",
@@ -337,7 +422,7 @@ function M.handle_output(output_data)
         for i, line in ipairs(lines) do
           new_lines[i] = string.gsub(line, "[\27\155][][()#;?%d]*[A-PRZcf-ntqry=><~]", "")
         end
-        vim.api.nvim_buf_set_lines(buf, line_count - 2, -1, false, new_lines)
+        safe_buf_write(buf, line_count - 2, -1, false, new_lines)
       end
     elseif output_data.type == "stderr" then
       local lines = vim.split(output_data.data, "\n")
@@ -350,7 +435,7 @@ function M.handle_output(output_data)
         for i, line in ipairs(lines) do
           new_lines[i] = string.gsub(line, "[\27\155][][()#;?%d]*[A-PRZcf-ntqry=><~]", "")
         end
-        vim.api.nvim_buf_set_lines(buf, line_count - 2, -1, false, new_lines)
+        safe_buf_write(buf, line_count - 2, -1, false, new_lines)
 
         for i = 0, #lines - 1 do
           vim.api.nvim_buf_add_highlight(buf, -1, "DiagnosticError", line_count - 2 + i, 0, -1)
@@ -358,7 +443,7 @@ function M.handle_output(output_data)
       end
     elseif output_data.type == "status" then
       local line_count = vim.api.nvim_buf_line_count(buf)
-      vim.api.nvim_buf_set_lines(buf, line_count - 1, line_count, false, { output_data.data })
+      safe_buf_write(buf, line_count - 1, line_count, false, { output_data.data })
       vim.api.nvim_buf_add_highlight(buf, -1, "DiagnosticWarn", line_count - 1, 0, -1)
     end
 
@@ -387,7 +472,7 @@ function M.show_result(result_data)
   if status_text ~= "" then
     for _, buf in ipairs(M.get_buffers()) do
       local line_count = vim.api.nvim_buf_line_count(buf)
-      vim.api.nvim_buf_set_lines(buf, line_count - 1, line_count, false, { status_text })
+      safe_buf_write(buf, line_count - 1, line_count, false, { status_text })
       vim.api.nvim_buf_add_highlight(buf, -1, highlight_group, line_count - 1, 0, -1)
     end
   end
