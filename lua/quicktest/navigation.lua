@@ -25,7 +25,7 @@ local function find_target_window()
   return vim.api.nvim_get_current_win()
 end
 
--- Discover test location with function discovery
+-- Discover test location with fallback logic (same for all callers)
 local function discover_test_location(test)
   if not test or not test.name then
     return nil
@@ -52,10 +52,21 @@ local function discover_test_location(test)
     end
   end
 
+  -- If still no location, look through all results for parent test
+  if string.match(test.name, "/") then
+    local parent_name = string.match(test.name, "^([^/]+)")
+    
+    for _, result in ipairs(raw_results) do
+      if result.name == parent_name and result.location and result.location ~= "" then
+        return result.location
+      end
+    end
+  end
+
   return nil
 end
 
--- Navigate to test location with function discovery
+-- Navigate to test location with basic function discovery
 ---@param test TestResult
 ---@param callback function? Optional callback to run after navigation
 ---@return boolean success

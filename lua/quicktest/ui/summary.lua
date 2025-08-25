@@ -94,7 +94,7 @@ local function get_or_create_buf()
 end
 
 
--- Navigate to test using shared navigation module
+-- Navigate to test using navigation module
 local function navigate_to_test(test, callback)
   local navigation = require("quicktest.navigation")
   return navigation.jump_to_test(test, callback)
