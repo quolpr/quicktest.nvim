@@ -28,6 +28,7 @@ local config = {
   summary = {
     enabled = true,
     join_to_panel = false,
+    only_failed = false,
   },
   status = {
     enabled = true,
@@ -44,7 +45,7 @@ M.config = config
 ---@param args QuicktestConfig?
 M.setup = function(args)
   M.config = vim.tbl_deep_extend("force", M.config, args or {})
-  
+
   -- Initialize UI with the new config
   local ui = require("quicktest.ui")
   ui.init_with_config(M.config)
@@ -131,6 +132,14 @@ M.toggle_summary = function()
   end
 end
 
+M.toggle_summary_failed_filter = function()
+  local ui = require("quicktest.ui")
+  local summary = ui.get("summary")
+  if summary and summary.toggle_failed_filter then
+    summary.toggle_failed_filter()
+  end
+end
+
 -- Navigate to next failed test
 M.next_failed_test = function()
   local storage = require("quicktest.storage")
@@ -139,7 +148,7 @@ M.next_failed_test = function()
     vim.notify("No failed tests found", vim.log.levels.INFO)
     return
   end
-  
+
   local navigation = require("quicktest.navigation")
   navigation.jump_to_test(test)
 end
@@ -152,7 +161,7 @@ M.prev_failed_test = function()
     vim.notify("No failed tests found", vim.log.levels.INFO)
     return
   end
-  
+
   local navigation = require("quicktest.navigation")
   navigation.jump_to_test(test)
 end

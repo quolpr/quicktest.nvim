@@ -7,7 +7,8 @@ local M = {}
 -- Configuration
 M.config = {
   join_to_panel = false,
-  enabled = true
+  enabled = true,
+  only_failed = false
 }
 
 local api = vim.api
@@ -15,6 +16,7 @@ local storage_subscription = nil
 local current_window = nil
 local current_buffer = nil
 local test_list = {}
+local show_only_failed = M.config.only_failed
 
 -- Forward declaration
 local update_display
@@ -250,8 +252,8 @@ update_display = function()
   local results = storage.get_current_results()
   local summary = storage.get_run_summary()
 
-  -- Filter test_list to only include actual tests (not status lines)
-  test_list = {}
+  -- Get all actual tests for counting (not status lines)
+  local all_tests = {}
   for _, test in ipairs(results) do
     -- Skip status lines that start with "Running test:" or similar command output
     -- Also skip Go test framework output lines
@@ -265,12 +267,12 @@ update_display = function()
         not string.match(name, "^FAIL$") and
         not string.match(name, "^ok%s+") and
         name ~= "" then
-      table.insert(test_list, test)
+      table.insert(all_tests, test)
     end
   end
 
-  -- Build header with correct filtered counts
-  local filtered_summary = {
+  -- Build summary counts from ALL tests (always show total counts)
+  local summary_counts = {
     total = 0,
     passed = 0,
     failed = 0,
@@ -278,14 +280,22 @@ update_display = function()
     skipped = 0
   }
 
-  for _, test in ipairs(test_list) do
-    filtered_summary.total = filtered_summary.total + 1
-    filtered_summary[test.status] = filtered_summary[test.status] + 1
+  for _, test in ipairs(all_tests) do
+    summary_counts.total = summary_counts.total + 1
+    summary_counts[test.status] = summary_counts[test.status] + 1
+  end
+
+  -- Filter display list based on show_only_failed (only affects displayed tests)
+  test_list = {}
+  for _, test in ipairs(all_tests) do
+    if not show_only_failed or test.status == "failed" then
+      table.insert(test_list, test)
+    end
   end
 
   local lines = {
     string.format("Total: %d | Passed: %d | Failed: %d | Skipped: %d",
-      filtered_summary.total, filtered_summary.passed, filtered_summary.failed, filtered_summary.skipped),
+      summary_counts.total, summary_counts.passed, summary_counts.failed, summary_counts.skipped),
     "",
     "Tests:"
   }
@@ -381,11 +391,22 @@ function M.toggle()
   end
 end
 
+-- Toggle failed filter
+function M.toggle_failed_filter()
+  show_only_failed = not show_only_failed
+  if M.is_open() then
+    update_display()
+  end
+end
+
 -- Initialize summary and subscribe to storage events
 function M.init()
   if storage_subscription then
     return -- Already initialized
   end
+
+  -- Initialize show_only_failed from config
+  show_only_failed = M.config.only_failed or false
 
   storage_subscription = function(event_type, data)
     if event_type == 'run_started' then
@@ -420,4 +441,3 @@ function M.cleanup()
 end
 
 return M
-
