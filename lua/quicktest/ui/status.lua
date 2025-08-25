@@ -1,13 +1,23 @@
 local storage = require("quicktest.storage")
 local ts = require("quicktest.ts")
 
-local M = {}
+---@class StatusConfig
+---@field enabled boolean
+---@field signs boolean
 
--- Configuration
-M.config = {
-  enabled = true,
-  signs = true
-}
+---@param opts StatusConfig?
+---@return table
+return function(opts)
+  opts = opts or {}
+  
+  local M = {}
+  M.name = "status"
+  
+  -- Configuration with defaults
+  M.config = vim.tbl_deep_extend("force", {
+    enabled = true,
+    signs = true
+  }, opts)
 
 local api = vim.api
 local storage_subscription = nil
@@ -266,4 +276,5 @@ function M.clear()
   end
 end
 
-return M
+  return M
+end

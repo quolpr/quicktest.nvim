@@ -4,7 +4,36 @@ local Split = require("nui.split")
 local storage = require("quicktest.storage")
 local colorized_printer = require("quicktest.colored_printer")
 
-local M = {}
+---@class PanelConfig
+---@field default_win_mode "split" | "popup"
+---@field popup_options table
+---@field use_builtin_colorizer boolean
+
+---@param opts PanelConfig?
+---@return table
+return function(opts)
+  opts = opts or {}
+  
+  local M = {}
+  M.name = "panel"
+  
+  -- Configuration with defaults
+  M.config = vim.tbl_deep_extend("force", {
+    default_win_mode = "split",
+    popup_options = {
+      enter = true,
+      focusable = true,
+      border = {
+        style = "rounded",
+      },
+      position = "50%",
+      size = {
+        width = "80%",
+        height = "60%",
+      },
+    },
+    use_builtin_colorizer = true,
+  }, opts)
 
 local api = vim.api
 local printer = colorized_printer.new()
@@ -133,15 +162,7 @@ local function open_popup()
     enter = false, -- Don't enter the popup window by default
     bufnr = get_popup_buf(),
     focusable = false,
-    border = {
-      style = "rounded",
-    },
-    position = "50%",
-    size = {
-      width = "80%",
-      height = "60%",
-    },
-  }, require("quicktest").config.popup_options)
+  }, M.config.popup_options)
 
   local popup = Popup(popup_options)
   popup:mount()
@@ -404,7 +425,7 @@ end
 
 -- Handle output from storage
 function M.handle_output(output_data)
-  local use_builtin_colorizer = require("quicktest").config.use_builtin_colorizer
+  local use_builtin_colorizer = M.config.use_builtin_colorizer
 
   for _, buf in ipairs(M.get_buffers()) do
     local should_scroll = M.should_continue_scroll(buf)
@@ -478,4 +499,5 @@ function M.show_result(result_data)
   end
 end
 
-return M
+  return M
+end

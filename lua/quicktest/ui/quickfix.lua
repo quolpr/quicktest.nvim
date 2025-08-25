@@ -1,7 +1,22 @@
 local storage = require("quicktest.storage")
 
-local M = {}
-M.config = { enabled = true, open = true }
+---@class QuickfixConfig
+---@field enabled boolean
+---@field open boolean
+
+---@param opts QuickfixConfig?
+---@return table
+return function(opts)
+  opts = opts or {}
+  
+  local M = {}
+  M.name = "quickfix"
+  
+  -- Configuration with defaults
+  M.config = vim.tbl_deep_extend("force", {
+    enabled = true,
+    open = true
+  }, opts)
 
 local storage_subscription = nil
 
@@ -79,4 +94,5 @@ function M.clear()
   vim.cmd("cclose")
 end
 
-return M
+  return M
+end

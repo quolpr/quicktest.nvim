@@ -1,7 +1,20 @@
 local storage = require("quicktest.storage")
 
-local M = {}
-M.config = { enabled = true }
+---@class DiagnosticsConfig
+---@field enabled boolean
+
+---@param opts DiagnosticsConfig?
+---@return table
+return function(opts)
+  opts = opts or {}
+  
+  local M = {}
+  M.name = "diagnostics"
+  
+  -- Configuration with defaults
+  M.config = vim.tbl_deep_extend("force", {
+    enabled = true
+  }, opts)
 
 local ns = vim.api.nvim_create_namespace("quicktest-diagnostics")
 local storage_subscription = nil
@@ -129,5 +142,6 @@ function M.update_all_open_buffers()
   end
 end
 
-return M
+  return M
+end
 

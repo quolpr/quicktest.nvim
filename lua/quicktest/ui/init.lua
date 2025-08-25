@@ -8,7 +8,7 @@ local ui_consumers = {}
 ---@param consumer table
 function M.register(name, consumer)
   ui_consumers[name] = consumer
-  
+
   -- Initialize the consumer if it has an init method
   if consumer.init then
     consumer.init()
@@ -56,54 +56,22 @@ function M.cleanup_all()
   end
 end
 
--- Auto-register built-in UI consumers
-local function auto_register(config)
-  local panel = require("quicktest.ui.panel")
-  M.register("panel", panel)
-  
-  -- Only register quickfix if enabled
-  if not config or config.quickfix.enabled then
-    local quickfix = require("quicktest.ui.quickfix")
-    quickfix.config = config and config.quickfix or { enabled = true, open = true }
-    M.register("quickfix", quickfix)
-  end
-  
-  -- Only register diagnostics if enabled
-  if not config or config.diagnostics.enabled then
-    local diagnostics = require("quicktest.ui.diagnostics")
-    diagnostics.config = config and config.diagnostics or { enabled = true }
-    M.register("diagnostics", diagnostics)
-  end
-  
-  -- Only register summary if enabled
-  if not config or (config.summary and config.summary.enabled ~= false) then
-    local summary = require("quicktest.ui.summary")
-    summary.config = config and config.summary or { enabled = true, join_to_panel = false }
-    M.register("summary", summary)
-  end
-  
-  -- Only register status if enabled
-  if not config or (config.status and config.status.enabled ~= false) then
-    local status = require("quicktest.ui.status")
-    status.config = config and config.status or { enabled = true, signs = true }
-    M.register("status", status)
-  end
-end
-
--- Initialize the UI system with config
----@param config QuicktestConfig?
-function M.init_with_config(config)
+-- Initialize the UI system with explicit consumers
+---@param ui_consumers_list table[]
+function M.init_with_consumers(ui_consumers_list)
   -- Cleanup existing consumers first
   M.cleanup_all()
-  
+
   -- Clear registry
   ui_consumers = {}
-  
-  -- Re-register with new config
-  auto_register(config)
-end
 
--- Initialize the UI system (backwards compatibility)
-auto_register()
+  -- Register provided consumers using their name property
+  for _, consumer in ipairs(ui_consumers_list or {}) do
+    if not consumer.name then
+      return vim.notify("every registered consumer must have a name", vim.log.levels.ERROR)
+    end
+    M.register(consumer.name, consumer)
+  end
+end
 
 return M

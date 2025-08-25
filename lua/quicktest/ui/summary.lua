@@ -2,14 +2,25 @@ local Popup = require("nui.popup")
 local Split = require("nui.split")
 local storage = require("quicktest.storage")
 
-local M = {}
+---@class SummaryConfig
+---@field join_to_panel boolean
+---@field enabled boolean
+---@field only_failed boolean
 
--- Configuration
-M.config = {
-  join_to_panel = false,
-  enabled = true,
-  only_failed = false
-}
+---@param opts SummaryConfig?
+---@return table
+return function(opts)
+  opts = opts or {}
+  
+  local M = {}
+  M.name = "summary"
+  
+  -- Configuration with defaults
+  M.config = vim.tbl_deep_extend("force", {
+    join_to_panel = false,
+    enabled = true,
+    only_failed = false
+  }, opts)
 
 local api = vim.api
 local storage_subscription = nil
@@ -440,4 +451,5 @@ function M.cleanup()
   test_list = {}
 end
 
-return M
+  return M
+end

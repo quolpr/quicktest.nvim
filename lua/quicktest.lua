@@ -3,37 +3,8 @@ local module = require("quicktest.module")
 
 local config = {
   adapters = {},
-  default_win_mode = "split",
-  use_builtin_colorizer = true,
+  ui = {}, -- List of UI consumers
   strategy = "default",
-  popup_options = {
-    enter = true,
-    focusable = true,
-    border = {
-      style = "rounded",
-    },
-    position = "50%",
-    size = {
-      width = "80%",
-      height = "60%",
-    },
-  },
-  quickfix = {
-    enabled = true,
-    open = true,
-  },
-  diagnostics = {
-    enabled = true,
-  },
-  summary = {
-    enabled = true,
-    join_to_panel = false,
-    only_failed = false,
-  },
-  status = {
-    enabled = true,
-    signs = true,
-  },
 }
 
 ---@class MyModule
@@ -46,13 +17,16 @@ M.config = config
 M.setup = function(args)
   M.config = vim.tbl_deep_extend("force", M.config, args or {})
 
-  -- Initialize UI with the new config
+  -- Initialize UI with explicit consumers
   local ui = require("quicktest.ui")
-  ui.init_with_config(M.config)
+  ui.init_with_consumers(M.config.ui or {})
 end
 
 M.current_win_mode = function()
-  return module.current_win_mode(M.config.default_win_mode)
+  local ui = require("quicktest.ui")
+  local panel = ui.get("panel")
+  local default_win_mode = panel and panel.config.default_win_mode or "split"
+  return module.current_win_mode(default_win_mode)
 end
 
 --- @param mode WinModeWithoutAuto

@@ -182,8 +182,9 @@ function M.run(adapter, params, mode, config, opts)
 
   -- Only open UI window for non-DAP strategies
   if strategy_name ~= "dap" then
-    local win_mode = mode == "auto" and M.current_win_mode(config.default_win_mode) or mode --[[@as WinModeWithoutAuto]]
     local panel = ui.get("panel")
+    local default_win_mode = panel and panel.config.default_win_mode or "split"
+    local win_mode = mode == "auto" and M.current_win_mode(default_win_mode) or mode --[[@as WinModeWithoutAuto]]
     if panel then
       panel.try_open_win(win_mode)
     end
