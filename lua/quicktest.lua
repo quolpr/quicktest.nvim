@@ -131,4 +131,30 @@ M.toggle_summary = function()
   end
 end
 
+-- Navigate to next failed test
+M.next_failed_test = function()
+  local storage = require("quicktest.storage")
+  local test = storage.next_failed_test()
+  if not test then
+    vim.notify("No failed tests found", vim.log.levels.INFO)
+    return
+  end
+  
+  local navigation = require("quicktest.navigation")
+  navigation.jump_to_test(test)
+end
+
+-- Navigate to previous failed test
+M.prev_failed_test = function()
+  local storage = require("quicktest.storage")
+  local test = storage.prev_failed_test()
+  if not test then
+    vim.notify("No failed tests found", vim.log.levels.INFO)
+    return
+  end
+  
+  local navigation = require("quicktest.navigation")
+  navigation.jump_to_test(test)
+end
+
 return M
