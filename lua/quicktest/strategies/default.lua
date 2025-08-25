@@ -100,12 +100,23 @@ M.run = function(adapter, params, config, opts)
         storage.test_output("stdout", result.output)
       elseif result.type == "stderr" and result.output then
         storage.test_output("stderr", result.output)
+      elseif result.type == "test_started" then
+        -- Handle individual test start from adapter
+        -- Find location using adapter method if available
+        local location = ""
+        if adapter.find_test_location then
+          location = adapter.find_test_location(result.test_name, params) or ""
+        end
+        storage.test_started(result.test_name, location)
       elseif result.type == "test_result" then
         -- Handle individual test results from adapter
-        -- First ensure this test exists in storage (create if needed)
-        storage.test_started(result.test_name, result.location or "")
-        -- Then mark it as finished
-        storage.test_finished(result.test_name, result.status, nil, result.location)
+        -- Find location using adapter method if available
+        local location = ""
+        if adapter.find_test_location then
+          location = adapter.find_test_location(result.test_name, params) or ""
+        end
+        -- Mark test as finished (it should already exist from test_started)
+        storage.test_finished(result.test_name, result.status, nil, location)
       elseif result.type == "assert_failure" then
         -- Handle assert failure location information
         storage.assert_failure(result.test_name, result.full_path, result.line, result.message)

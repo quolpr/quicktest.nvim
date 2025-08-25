@@ -65,27 +65,30 @@ M.run = function(adapter, params, config, opts)
         storage.test_started(run_test_name, location or "")
       end
       
-      -- Check for test completion (--- PASS/FAIL)
+      -- Check for test completion (--- PASS/FAIL/SKIP)
       local test_name_pass = line:match("^%-%-%-%s+PASS:%s+([^%(]+)")
       local test_name_fail = line:match("^%-%-%-%s+FAIL:%s+([^%(]+)")
+      local test_name_skip = line:match("^%-%-%-%s+SKIP:%s+([^%(]+)")
       
       local status, test_name
       if test_name_pass then
-        status = "PASS"
+        status = "passed"
         test_name = test_name_pass
       elseif test_name_fail then
-        status = "FAIL" 
+        status = "failed" 
         test_name = test_name_fail
+      elseif test_name_skip then
+        status = "skipped"
+        test_name = test_name_skip
       end
       
       if status and test_name then
         -- Remove trailing whitespace from test_name
         test_name = test_name:gsub("%s+$", "")
-        local test_status = status == "PASS" and "passed" or "failed"
         
         -- Find test location and update storage
         local location = find_test_location_dap(test_name, adapter, params)
-        storage.test_finished(test_name, test_status, nil, location)
+        storage.test_finished(test_name, status, nil, location)
       end
       
       -- Parse assert failure locations and messages from output (same as Go adapter)
