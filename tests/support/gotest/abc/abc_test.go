@@ -2,13 +2,12 @@ package abc_test
 
 import (
 	"fmt"
+	"gotest/abc"
 	"math"
 	"os"
 	"strconv"
 	"testing"
 	"time"
-
-	"gotest/abc"
 )
 
 func TestSum(t *testing.T) {
@@ -74,5 +73,203 @@ func TestSum2(t *testing.T) {
 func TestIntensiveOutput(t *testing.T) {
 	for i := range 10000 {
 		fmt.Println("hi!hi!hi!hi!hi!hi!hi!hi!hi!hi!hi!hi!hi!hi!hi!hi!hi!hi!hi!hi!hi!hi!" + strconv.Itoa(i))
+	}
+}
+
+func TestTableDrivenTyped(t *testing.T) {
+	type testCase struct {
+		name string
+	}
+
+	for _, tt := range []testCase{
+		{
+			name: "json",
+		},
+		{
+			name: "yaml",
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			fmt.Println(tt.name)
+		})
+	}
+}
+
+func TestTableDrivenTypedDifferentNameField(t *testing.T) {
+	type testCase struct {
+		name     string
+		realName string
+	}
+
+	for _, tt := range []testCase{
+		{
+			name:     "json",
+			realName: "also json",
+		},
+		{
+			name:     "yaml",
+			realName: "also yaml",
+		},
+	} {
+		t.Run(tt.realName, func(t *testing.T) {
+			fmt.Println(tt.name)
+		})
+	}
+}
+
+func TestTableDrivenInlined(t *testing.T) {
+	for _, tt := range []struct {
+		name string
+	}{
+		{
+			name: "json",
+		},
+		{
+			name: "yaml",
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			fmt.Println(tt.name)
+		})
+	}
+}
+
+func TestTableDrivenInlinedDifferentName(t *testing.T) {
+	for _, tt := range []struct {
+		name     string
+		realName string
+	}{
+		{
+			name:     "json",
+			realName: "also json",
+		},
+		{
+			name:     "yaml",
+			realName: "also yaml",
+		},
+	} {
+		t.Run(tt.realName, func(t *testing.T) {
+			fmt.Println(tt.name)
+		})
+	}
+}
+
+func TestTableDrivenMapKeyIsName(t *testing.T) {
+	type testCase struct {
+		name string
+	}
+
+	for name, tt := range map[string]testCase{
+		"json": {
+			name: "not a name",
+		},
+		"yaml": {
+			name: "not a name either",
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			fmt.Println(tt.name)
+		})
+	}
+}
+
+func TestTableDrivenMap(t *testing.T) {
+	type testCase struct {
+		name string
+	}
+
+	for name, tt := range map[string]testCase{
+		"json": {
+			name: "real name json",
+		},
+		"yaml": {
+			name: "real name yaml",
+		},
+	} {
+		_ = name
+		t.Run(tt.name, func(t *testing.T) {
+			fmt.Println(tt.name)
+		})
+	}
+}
+
+func TestTableDrivenList(t *testing.T) {
+	testCases := []struct {
+		name     string
+		input    int
+		expected int
+	}{
+		{
+			name:     "positive number",
+			input:    5,
+			expected: 25,
+		},
+		{
+			name:     "zero",
+			input:    0,
+			expected: 0,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			result := tc.input * tc.input
+			if result != tc.expected {
+				t.Errorf("got %d, want %d", result, tc.expected)
+			}
+		})
+	}
+}
+
+func TestTableDrivenUnkeyed(t *testing.T) {
+	testCases := []struct {
+		name     string
+		input    int
+		expected int
+	}{
+		{
+			"positive number", // unkeyed literal - no field names
+			5,
+			25,
+		},
+		{
+			"zero", // unkeyed literal - no field names
+			0,
+			0,
+		},
+	}
+
+	for i, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			result := tc.input * tc.input
+			if result != tc.expected {
+				t.Errorf("Test %d: got %d, want %d", i, result, tc.expected)
+			}
+		})
+	}
+}
+
+func TestTableDrivenLoopUnkeyed(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		age  int
+	}{
+		{
+			"Alice",
+			25,
+		},
+		{
+			"Bob",
+			30,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			if len(tc.name) == 0 {
+				t.Error("name should not be empty")
+			}
+			if tc.age <= 0 {
+				t.Error("age should be positive")
+			}
+		})
 	}
 }

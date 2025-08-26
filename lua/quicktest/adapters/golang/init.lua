@@ -81,7 +81,7 @@ local function get_module_path(cwd, bufnr)
 
   -- Check if the file_path starts with the cwd and extract the relative part
   if string.sub(file_path, 1, #cwd) == cwd then
-    local relative_path = string.sub(file_path, #cwd + 2)               -- +2 to remove the leading slash
+    local relative_path = string.sub(file_path, #cwd + 2) -- +2 to remove the leading slash
     local module_path = "./" .. vim.fn.fnamemodify(relative_path, ":h") -- Get directory path without filename
     return module_path
   else
@@ -134,15 +134,15 @@ M.build_file_run_params = function(bufnr, cursor_pos, opts)
   end
 
   return {
-        func_names = func_names,
-        sub_func_names = {},
-        cwd = cwd,
-        module = module,
-        bufnr = bufnr,
-        cursor_pos = cursor_pos,
-        opts = opts,
-      },
-      nil
+    func_names = func_names,
+    sub_func_names = {},
+    cwd = cwd,
+    module = module,
+    bufnr = bufnr,
+    cursor_pos = cursor_pos,
+    opts = opts,
+  },
+    nil
 end
 
 ---@param bufnr integer
@@ -151,12 +151,14 @@ end
 ---@return GoRunParams | nil, string | nil
 M.build_line_run_params = function(bufnr, cursor_pos, opts)
   local func_names = ts.get_nearest_func_names(bufnr, cursor_pos)
-  local sub_name = ts.get_sub_testcase_name(bufnr, cursor_pos)
+  local sub_test_name = ts.get_sub_testcase_name(bufnr, cursor_pos) or ts.get_table_test_name(bufnr, cursor_pos)
+
   --- @type string[]
   local sub_func_names = {}
-  if sub_name then
-    sub_func_names = { sub_name }
+  if sub_test_name then
+    sub_func_names = { sub_test_name }
   end
+
   local cwd = M.get_cwd(bufnr)
   local module = get_module_path(cwd, bufnr) or "."
 
@@ -165,15 +167,15 @@ M.build_line_run_params = function(bufnr, cursor_pos, opts)
   end
 
   return {
-        func_names = func_names,
-        sub_func_names = sub_func_names,
-        cwd = cwd,
-        module = module,
-        bufnr = bufnr,
-        cursor_pos = cursor_pos,
-        opts = opts,
-      },
-      nil
+    func_names = func_names,
+    sub_func_names = sub_func_names,
+    cwd = cwd,
+    module = module,
+    bufnr = bufnr,
+    cursor_pos = cursor_pos,
+    opts = opts,
+  },
+    nil
 end
 
 ---@param bufnr integer
@@ -185,15 +187,15 @@ M.build_all_run_params = function(bufnr, cursor_pos, opts)
   local module = "./..."
 
   return {
-        func_names = {},
-        sub_func_names = {},
-        cwd = cwd,
-        module = module,
-        bufnr = bufnr,
-        cursor_pos = cursor_pos,
-        opts = opts,
-      },
-      nil
+    func_names = {},
+    sub_func_names = {},
+    cwd = cwd,
+    module = module,
+    bufnr = bufnr,
+    cursor_pos = cursor_pos,
+    opts = opts,
+  },
+    nil
 end
 
 ---@param bufnr integer
@@ -205,15 +207,15 @@ M.build_dir_run_params = function(bufnr, cursor_pos, opts)
   local module = get_module_path(cwd, bufnr) or "."
 
   return {
-        func_names = {},
-        sub_func_names = {},
-        cwd = cwd,
-        module = module,
-        bufnr = bufnr,
-        cursor_pos = cursor_pos,
-        opts = opts,
-      },
-      nil
+    func_names = {},
+    sub_func_names = {},
+    cwd = cwd,
+    module = module,
+    bufnr = bufnr,
+    cursor_pos = cursor_pos,
+    opts = opts,
+  },
+    nil
 end
 
 ---@param params GoRunParams
@@ -222,7 +224,7 @@ end
 M.run = function(params, send)
   local additional_args = M.options.additional_args and M.options.additional_args(params.bufnr) or {}
   additional_args = params.opts.additional_args and vim.list_extend(additional_args, params.opts.additional_args)
-      or additional_args
+    or additional_args
 
   local args = cmd.build_args(params.module, params.func_names, params.sub_func_names, additional_args)
   args = M.options.args and M.options.args(params.bufnr, args) or args
@@ -254,26 +256,26 @@ M.run = function(params, send)
         send({
           type = "test_started",
           test_name = res.Test,
-          status = "running"
+          status = "running",
         })
       elseif res.Action == "fail" and res.Test then
         -- Send test result without location (avoid fast event context)
         send({
           type = "test_result",
           test_name = res.Test,
-          status = "failed"
+          status = "failed",
         })
       elseif res.Action == "pass" and res.Test then
         send({
           type = "test_result",
           test_name = res.Test,
-          status = "passed"
+          status = "passed",
         })
       elseif res.Action == "skip" and res.Test then
         send({
           type = "test_result",
           test_name = res.Test,
-          status = "skipped"
+          status = "skipped",
         })
       elseif res.Action == "output" and res.Test and res.Output then
         -- Parse assert failure locations and messages from output
@@ -287,7 +289,7 @@ M.run = function(params, send)
             test_name = res.Test,
             full_path = full_path,
             line = line_no,
-            message = ""
+            message = "",
           })
         end
 
@@ -299,7 +301,7 @@ M.run = function(params, send)
           send({
             type = "assert_error",
             test_name = res.Test,
-            message = error_message
+            message = error_message,
           })
         end
 
@@ -310,7 +312,7 @@ M.run = function(params, send)
           send({
             type = "assert_message",
             test_name = res.Test,
-            message = assert_message:gsub("^%s+", ""):gsub("%s+$", "") -- trim whitespace
+            message = assert_message:gsub("^%s+", ""):gsub("%s+$", ""), -- trim whitespace
           })
         end
       end
@@ -344,7 +346,7 @@ end
 M.title = function(params)
   local additional_args = M.options.additional_args and M.options.additional_args(params.bufnr) or {}
   additional_args = params.opts.additional_args and vim.list_extend(additional_args, params.opts.additional_args)
-      or additional_args
+    or additional_args
 
   local args = cmd.build_args(params.module, params.func_names, params.sub_func_names, additional_args)
   args = M.options.args and M.options.args(params.bufnr, args) or args
@@ -421,6 +423,37 @@ end
 ---@param params GoRunParams
 ---@return string?
 M.find_test_location = function(test_name, params)
+  -- Check if this is a sub-test (contains "/")
+  if test_name:match("/") then
+    local parent_test_name, sub_test_name = test_name:match("^([^/]+)/(.+)$")
+    
+    if parent_test_name and sub_test_name then
+      -- First find the file containing the parent test
+      local file_path, parent_line = find_test_location(parent_test_name, params.cwd, params.module)
+      if file_path and parent_line then
+        -- Load the file into a buffer to search for sub-test location
+        local temp_bufnr = vim.fn.bufadd(file_path)
+        vim.fn.bufload(temp_bufnr)
+        
+        -- Try to find sub-test location (t.Run calls)
+        local sub_test_line = ts.find_sub_test_location(temp_bufnr, parent_test_name, sub_test_name)
+        if sub_test_line then
+          return file_path .. ":" .. (sub_test_line + 1) -- Convert from 0-based to 1-based
+        end
+        
+        -- Try to find table-driven test case location
+        local table_test_line = ts.find_table_test_case_location(temp_bufnr, parent_test_name, sub_test_name)
+        if table_test_line then
+          return file_path .. ":" .. (table_test_line + 1) -- Convert from 0-based to 1-based
+        end
+        
+        -- If sub-test location not found, fall back to parent test location
+        return file_path .. ":" .. parent_line
+      end
+    end
+  end
+  
+  -- Regular test function (not a sub-test)
   local file_path, line_no = find_test_location(test_name, params.cwd, params.module)
   if file_path and line_no then
     return file_path .. ":" .. line_no
@@ -435,13 +468,14 @@ M.build_dap_config = function(bufnr, params)
   if params.module == "./..." then
     vim.notify(
       "DAP strategy cannot debug 'all tests' across multiple packages. Use run_dir on a specific package or switch to default strategy.",
-      vim.log.levels.ERROR)
+      vim.log.levels.ERROR
+    )
     return
   end
 
   local additional_args = M.options.additional_args and M.options.additional_args(bufnr) or {}
   additional_args = params.opts.additional_args and vim.list_extend(additional_args, params.opts.additional_args)
-      or additional_args
+    or additional_args
 
   local test_args = cmd.build_dap_args(params.func_names, params.sub_func_names, additional_args)
 
