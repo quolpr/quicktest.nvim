@@ -426,7 +426,7 @@ M.find_test_location = function(test_name, params)
   -- Check if this is a sub-test (contains "/")
   if test_name:match("/") then
     local parent_test_name, sub_test_name = test_name:match("^([^/]+)/(.+)$")
-    
+
     if parent_test_name and sub_test_name then
       -- First find the file containing the parent test
       local file_path, parent_line = find_test_location(parent_test_name, params.cwd, params.module)
@@ -434,25 +434,25 @@ M.find_test_location = function(test_name, params)
         -- Load the file into a buffer to search for sub-test location
         local temp_bufnr = vim.fn.bufadd(file_path)
         vim.fn.bufload(temp_bufnr)
-        
+
         -- Try to find sub-test location (t.Run calls)
         local sub_test_line = ts.find_sub_test_location(temp_bufnr, parent_test_name, sub_test_name)
         if sub_test_line then
           return file_path .. ":" .. (sub_test_line + 1) -- Convert from 0-based to 1-based
         end
-        
+
         -- Try to find table-driven test case location
         local table_test_line = ts.find_table_test_case_location(temp_bufnr, parent_test_name, sub_test_name)
         if table_test_line then
           return file_path .. ":" .. (table_test_line + 1) -- Convert from 0-based to 1-based
         end
-        
+
         -- If sub-test location not found, fall back to parent test location
         return file_path .. ":" .. parent_line
       end
     end
   end
-  
+
   -- Regular test function (not a sub-test)
   local file_path, line_no = find_test_location(test_name, params.cwd, params.module)
   if file_path and line_no then

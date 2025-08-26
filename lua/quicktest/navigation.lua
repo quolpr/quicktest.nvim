@@ -12,9 +12,7 @@ local function find_target_window()
       local is_summary = vim.w[win].quicktest_summary
 
       -- Skip our special windows
-      if not string.match(buf_name, "quicktest://") and
-          not is_panel and
-          not is_summary then
+      if not string.match(buf_name, "quicktest://") and not is_panel and not is_summary then
         return win
       end
     end
@@ -55,7 +53,7 @@ local function discover_test_location(test)
   -- If still no location, look through all results for parent test
   if string.match(test.name, "/") then
     local parent_name = string.match(test.name, "^([^/]+)")
-    
+
     for _, result in ipairs(raw_results) do
       if result.name == parent_name and result.location and result.location ~= "" then
         return result.location
@@ -113,15 +111,15 @@ function M.jump_to_test(test, callback)
 
       vim.api.nvim_win_set_cursor(target_win, { line, 0 })
     end)
-    
+
     -- Focus the target window
     vim.api.nvim_set_current_win(target_win)
-    
+
     -- Run callback if provided
     if callback then
       callback()
     end
-    
+
     return true
   end
 
@@ -129,3 +127,4 @@ function M.jump_to_test(test, callback)
 end
 
 return M
+

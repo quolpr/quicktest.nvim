@@ -52,4 +52,3 @@ M.load_strategies = function()
 end
 
 return M
-

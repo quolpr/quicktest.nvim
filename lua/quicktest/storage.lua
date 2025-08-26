@@ -31,7 +31,7 @@ local current_state = {
   output_lines = {},
   subscribers = {},
   failed_test_index = 0,
-  cached_failed_tests = nil
+  cached_failed_tests = nil,
 }
 
 -- Emit event to all subscribers
@@ -87,7 +87,7 @@ function M.test_started(name, location)
       if location and location ~= "" then
         result.location = location
       end
-      emit_event('test_started', result)
+      emit_event("test_started", result)
       return
     end
   end
@@ -96,13 +96,13 @@ function M.test_started(name, location)
   local result = {
     name = name,
     location = location,
-    status = 'running',
+    status = "running",
     duration = nil,
-    timestamp = vim.uv.now()
+    timestamp = vim.uv.now(),
   }
 
   table.insert(current_state.test_results, result)
-  emit_event('test_started', result)
+  emit_event("test_started", result)
 end
 
 -- Add test output event
@@ -112,11 +112,11 @@ function M.test_output(type, data)
   local output = {
     type = type,
     data = data,
-    timestamp = vim.uv.now()
+    timestamp = vim.uv.now(),
   }
 
   table.insert(current_state.output_lines, output)
-  emit_event('test_output', output)
+  emit_event("test_output", output)
 end
 
 -- Mark test as finished
@@ -131,7 +131,7 @@ function M.test_finished(name, status, duration, location)
       result.status = status
       result.duration = duration and duration or result.duration
       result.location = location and location or result.location
-      emit_event('test_finished', result)
+      emit_event("test_finished", result)
       break
     end
   end
@@ -173,13 +173,13 @@ function M.assert_failure(test_name, full_path, line, message)
     found_result = {
       name = test_name,
       location = full_path .. ":" .. line, -- Use assert location as test location
-      status = 'running',
+      status = "running",
       duration = nil,
       timestamp = vim.uv.now(),
-      assert_failures = {}
+      assert_failures = {},
     }
     table.insert(current_state.test_results, found_result)
-    emit_event('test_started', found_result)
+    emit_event("test_started", found_result)
   end
 
   -- Now add the assert failure to the test
@@ -204,15 +204,15 @@ function M.assert_failure(test_name, full_path, line, message)
     table.insert(found_result.assert_failures, {
       full_path = full_path,
       line = line,
-      message = message
+      message = message,
     })
   end
 
-  emit_event('assert_failure', {
+  emit_event("assert_failure", {
     test_name = test_name,
     full_path = full_path,
     line = line,
-    message = message
+    message = message,
   })
 end
 
@@ -226,11 +226,11 @@ function M.assert_error(test_name, error_message)
       local latest_failure = result.assert_failures[#result.assert_failures]
       latest_failure.error_message = error_message
 
-      emit_event('assert_error', {
+      emit_event("assert_error", {
         test_name = test_name,
         error_message = error_message,
         full_path = latest_failure.full_path,
-        line = latest_failure.line
+        line = latest_failure.line,
       })
       return
     end
@@ -247,11 +247,11 @@ function M.assert_message(test_name, message)
       local latest_failure = result.assert_failures[#result.assert_failures]
       latest_failure.message = message
 
-      emit_event('assert_message', {
+      emit_event("assert_message", {
         test_name = test_name,
         message = message,
         full_path = latest_failure.full_path,
-        line = latest_failure.line
+        line = latest_failure.line,
       })
       return
     end
@@ -265,7 +265,7 @@ function M.get_run_summary()
     running = 0,
     passed = 0,
     failed = 0,
-    skipped = 0
+    skipped = 0,
   }
 
   for _, result in ipairs(current_state.test_results) do
@@ -285,7 +285,7 @@ local function get_failed_tests()
   -- Build and cache failed tests list, filter out tests with invalid locations
   local failed_tests = {}
   for _, result in ipairs(current_state.test_results) do
-    if result.status == 'failed' then
+    if result.status == "failed" then
       -- Only include tests that have valid locations (line > 0) or no location (will be discovered)
       local has_valid_location = false
       if not result.location or result.location == "" then
@@ -297,7 +297,7 @@ local function get_failed_tests()
           has_valid_location = true
         end
       end
-      
+
       if has_valid_location then
         table.insert(failed_tests, result)
       end

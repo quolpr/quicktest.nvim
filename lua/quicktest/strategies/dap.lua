@@ -1,7 +1,7 @@
 local storage = require("quicktest.storage")
 
 local M = {
-  name = "dap"
+  name = "dap",
 }
 
 -- Find test location using adapter method if available
@@ -54,8 +54,8 @@ M.run = function(adapter, params, config, opts)
     -- === RUN   TestServiceCancelDelivery
     -- --- FAIL: TestServiceCancelDelivery (0.00s)
     -- --- PASS: TestCreateCourierShift/successful_flow_with_successful_comment_creation (0.00s)
-    
-    local lines = vim.split(data, '\n')
+
+    local lines = vim.split(data, "\n")
     for _, line in ipairs(lines) do
       -- Check for test start (=== RUN)
       local run_test_name = line:match("^=== RUN%s+(.+)$")
@@ -64,35 +64,35 @@ M.run = function(adapter, params, config, opts)
         local location = find_test_location_dap(run_test_name, adapter, params)
         storage.test_started(run_test_name, location or "")
       end
-      
+
       -- Check for test completion (--- PASS/FAIL/SKIP)
       local test_name_pass = line:match("^%-%-%-%s+PASS:%s+([^%(]+)")
       local test_name_fail = line:match("^%-%-%-%s+FAIL:%s+([^%(]+)")
       local test_name_skip = line:match("^%-%-%-%s+SKIP:%s+([^%(]+)")
-      
+
       local status, test_name
       if test_name_pass then
         status = "passed"
         test_name = test_name_pass
       elseif test_name_fail then
-        status = "failed" 
+        status = "failed"
         test_name = test_name_fail
       elseif test_name_skip then
         status = "skipped"
         test_name = test_name_skip
       end
-      
+
       if status and test_name then
         -- Remove trailing whitespace from test_name
         test_name = test_name:gsub("%s+$", "")
-        
+
         -- Find test location and update storage
         local location = find_test_location_dap(test_name, adapter, params)
         storage.test_finished(test_name, status, nil, location)
       end
-      
+
       -- Parse assert failure locations and messages from output (same as Go adapter)
-      
+
       -- Pattern 2: "Error Trace:" with full path - most important for location
       local full_path, line_str = line:match("Error Trace:%s*([^:]+):(%d+)")
       if full_path and line_str then
@@ -107,12 +107,12 @@ M.run = function(adapter, params, config, opts)
             break
           end
         end
-        
+
         if current_test then
           storage.assert_failure(current_test, full_path, line_no, "")
         end
       end
-      
+
       -- Parse "Error:" field to get the main error message
       local error_message = line:match("Error:%s*(.+)$")
       if error_message then
@@ -126,12 +126,12 @@ M.run = function(adapter, params, config, opts)
             break
           end
         end
-        
+
         if current_test then
           storage.assert_error(current_test, error_message)
         end
       end
-      
+
       -- Pattern 3: "Messages:" to get the additional message
       local assert_message = line:match("Messages:%s*(.+)$")
       if assert_message then
@@ -145,7 +145,7 @@ M.run = function(adapter, params, config, opts)
             break
           end
         end
-        
+
         if current_test then
           storage.assert_message(current_test, assert_message)
         end

@@ -4,7 +4,7 @@ local a = require("plenary.async")
 local u = require("plenary.async.util")
 
 local M = {
-  name = "default"
+  name = "default",
 }
 
 -- Module-level current job tracking (shared with kill function)
@@ -19,7 +19,7 @@ M.kill_current_run = function()
 
     local passedTime = vim.loop.now() - job.started_at
     local time_display = string.format("%.2f", passedTime / 1000) .. "s"
-    
+
     storage.test_output("status", "Cancelled after " .. time_display)
   end
 end
@@ -59,18 +59,18 @@ M.run = function(adapter, params, config, opts)
     -- Start test event
     local test_name = "Test"
     local test_location = ""
-    
+
     if adapter.title then
       test_name = adapter.title(params)
     end
-    
+
     if params and params.bufnr then
       test_location = vim.api.nvim_buf_get_name(params.bufnr)
       if params.line_number then
         test_location = test_location .. ":" .. params.line_number
       end
     end
-    
+
     storage.test_started(test_name, test_location)
 
     local results = {}
@@ -87,12 +87,12 @@ M.run = function(adapter, params, config, opts)
       if result.type == "exit" then
         job.exit_code = result.code
         current_job = nil
-        
+
         -- Emit test finished event
         local status = result.code == 0 and "passed" or "failed"
         local duration = vim.uv.now() - job.started_at
         storage.test_finished(test_name, status, duration)
-        
+
         if adapter.after_run then
           adapter.after_run(params, results)
         end

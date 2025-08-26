@@ -135,9 +135,15 @@ local function get_strategy_name(config, adapter, opts)
       local available_names = vim.tbl_keys(available_strategies)
       table.sort(available_names)
       vim.notify(
-        "Invalid strategy: " ..
-        strategy_name .. ". Available: " .. table.concat(available_names, ", ") .. ". Using '" .. fallback .. "'.",
-        vim.log.levels.WARN)
+        "Invalid strategy: "
+          .. strategy_name
+          .. ". Available: "
+          .. table.concat(available_names, ", ")
+          .. ". Using '"
+          .. fallback
+          .. "'.",
+        vim.log.levels.WARN
+      )
       return fallback
     end
     return strategy_name or fallback
@@ -196,7 +202,7 @@ end
 local function get_adapter_and_params(config, type, adapter_name, current_buffer, cursor_pos, opts)
   --- @type QuicktestAdapter
   local adapter = adapter_name == "auto" and get_adapter(config, type)
-      or get_adapter_by_name(config.adapters, adapter_name)
+    or get_adapter_by_name(config.adapters, adapter_name)
 
   if not adapter then
     return nil, nil, "Failed to test: no suitable adapter found."
@@ -224,7 +230,7 @@ end
 --- @return QuicktestStrategyResult?
 function M.prepare_and_run(config, type, mode, adapter_name, opts)
   local current_buffer = api.nvim_get_current_buf()
-  local win = vim.api.nvim_get_current_win()          -- Get the current active window
+  local win = vim.api.nvim_get_current_win() -- Get the current active window
   local cursor_pos = vim.api.nvim_win_get_cursor(win) -- Get the cursor position in the window
 
   local adapter, params, error = get_adapter_and_params(config, type, adapter_name, current_buffer, cursor_pos, opts)
@@ -292,7 +298,7 @@ function M.run_previous(config, mode)
   end
 
   local adapter, params, error =
-      get_adapter_and_params(config, current_run.type, current_run.adapter_name, bufnr, current_run.cursor_pos, {})
+    get_adapter_and_params(config, current_run.type, current_run.adapter_name, bufnr, current_run.cursor_pos, {})
   if error ~= nil then
     notify.warn(error)
     return nil
