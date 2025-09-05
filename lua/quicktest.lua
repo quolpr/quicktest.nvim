@@ -5,6 +5,7 @@ local config = {
   adapters = {},
   default_win_mode = "split",
   use_builtin_colorizer = true,
+  strategy = "default",
   popup_options = {
     enter = true,
     focusable = true,
