@@ -10,6 +10,7 @@ local Job = require("plenary.job")
 ---@field args (fun(bufnr: integer, current: string[]): string[])?
 ---@field env (fun(bufnr: integer, current: table<string, string>): table<string, string>)?
 ---@field is_enabled (fun(bufnr: integer, type: RunType, current: boolean): boolean)?
+---@field dap (fun(bufnr: integer, params: GoRunParams): table)?
 
 local M = {
   name = "go",
@@ -296,6 +297,37 @@ M.is_enabled = function(bufnr, type)
   end
 
   return M.options.is_enabled(bufnr, type, is_test_file)
+end
+
+---@param bufnr integer
+---@param params GoRunParams
+---@return table
+M.build_dap_config = function(bufnr, params)
+  local additional_args = M.options.additional_args and M.options.additional_args(bufnr) or {}
+  additional_args = params.opts.additional_args and vim.list_extend(additional_args, params.opts.additional_args)
+    or additional_args
+
+  local test_args = cmd.build_dap_args(params.func_names, params.sub_func_names, additional_args)
+
+  local env = vim.fn.environ()
+  env = M.options.env and M.options.env(bufnr, env) or env
+
+  local config = {
+    type = "go",
+    name = "Debug Test",
+    request = "launch",
+    mode = "test",
+    program = params.module == "./..." and "." or params.module,
+    args = test_args,
+    env = env,
+    cwd = params.cwd,
+  }
+
+  if M.options.dap then
+    config = vim.tbl_extend("force", config, M.options.dap(bufnr, params))
+  end
+
+  return config
 end
 
 --- Adapter options.
