@@ -32,9 +32,19 @@ With Lazy:
         require("quicktest.adapters.dart"),
         require("quicktest.adapters.rspec"),
       },
-      -- split or popup mode, when argument not specified
-      default_win_mode = "split",
-      use_builtin_colorizer = true
+      ui = {
+        require("quicktest.ui.panel")({ 
+          -- split or popup mode, split is default
+          default_win_mode = "split",
+          use_builtin_colorizer = true
+        }),
+        require("quicktest.ui.diagnostics")(),
+        -- open on finishing tests if the quickfix list is not empty
+        require("quicktest.ui.quickfix")({ enabled = true, open = false }),
+        -- join_to_panel to show with output panel on the same horizontal line, 
+        -- only_failedto show only failed tests, the stats shows includes passed and skipped tests as well
+        require("quicktest.ui.summary")({ join_to_panel = true, only_failed = true, enabled = true }),
+      },
     })
   end,
   dependencies = {
@@ -53,6 +63,33 @@ With Lazy:
         -- qt.run_line('popup')
       end,
       desc = "[T]est Run [L]line",
+    },
+    {
+      "<leader>td",
+      function()
+        local qt = require("quicktest")
+        -- split output mode (auto), default adapter defined by filetype (auto),
+        qt.run_line("auto", "auto", { strategy = "dap" })
+      end,
+      desc = "[D]ebug [L]line",
+    },
+    {
+      "<leader>ta",
+      function()
+        local qt = require("quicktest")
+        local args_by_ft = {
+          go = { "-v", "-failfast", "-race", "short", "-count=1" },
+        }
+        local args = args_by_ft[vim.bo.ft]
+        if not args then
+          local msg = string.format("no args for ft=%s found", vim.bo.ft)
+          return vim.notify(msg, vim.log.levels.ERROR)
+        end
+
+        -- pass additional args to tests
+        qt.run_all("auto", "auto", { additional_args = args })
+      end,
+      desc = "[T]est Run [A]ll",
     },
     {
       "<leader>tf",
@@ -100,13 +137,55 @@ With Lazy:
       desc = "[T]est [T]oggle Window",
     },
     {
-      "<leader>tc",
+      "<leader>to",
       function()
         local qt = require("quicktest")
 
+        qt.toggle_win("popup")
+      end,
+      desc = "[T]est [T]oggle Window",
+    },
+    {
+      "<leader>tc",
+      function()
+        local qt = require("quicktest")
+        -- works only for the default strategy, DAP must be stopped using DAP 
         qt.cancel_current_run()
       end,
       desc = "[T]est [C]ancel Current Run",
+    },
+    {
+      "<leader>ts",
+      function()
+        local qt = require("quicktest")
+
+        qt.toggle_summary()
+      end,
+      desc = "[T]est [S]ummary",
+    },
+    {
+      "]n",
+      function()
+        local qt = require("quicktest")
+        qt.next_failed_test()
+      end,
+      desc = "Next failed test",
+    },
+    {
+      "[n",
+      function()
+        local qt = require("quicktest")
+        qt.prev_failed_test()
+      end,
+      desc = "Prev failed test",
+    },
+    {
+      "<leader>tS",
+      function()
+        local qt = require("quicktest")
+        qt.toggle_summary_failed_filter()
+      end,
+      desc = "Toggle summary show only failed",
     },
   },
 }
@@ -128,9 +207,19 @@ qt.setup({
     require("quicktest.adapters.dart"),
     require("quicktest.adapters.rspec"),
   },
-  -- split or popup mode, when argument not specified
-  default_win_mode = "split",
-  use_builtin_colorizer = true
+  ui = {
+    require("quicktest.ui.panel")({
+      -- split or popup mode, split is default
+      default_win_mode = "split",
+      use_builtin_colorizer = true
+    }),
+    require("quicktest.ui.diagnostics")(),
+    -- open on finishing tests if the quickfix list is not empty
+    require("quicktest.ui.quickfix")({ enabled = true, open = false }),
+    -- join_to_panel to show with output panel on the same horizontal line, 
+    -- only_failedto show only failed tests, the stats shows includes passed and skipped tests as well
+    require("quicktest.ui.summary")({ join_to_panel = true, only_failed = true, enabled = true }),
+  },
 })
 
 vim.keymap.set("n", "<leader>tl", qt.run_line, {
@@ -360,7 +449,9 @@ qt.setup({
 
 ## Building your own adapter
 
-Here is the template of how adapter for any language could be written. For more examples just check `lua/quicktest/adapters`. For tresitter methods investigation you can take code from adapters of neotest from https://github.com/nvim-neotest/neotest?tab=readme-ov-file#supported-runners
+Here is the template of how adapter for any language could be written. 
+For more examples just check `lua/quicktest/adapters/golang`, at the moment that's the only adapter supports DAP strategy.
+For tresitter methods investigation you can take code from adapters of neotest from https://github.com/nvim-neotest/neotest?tab=readme-ov-file#supported-runners
 
 ```lua
 local Job = require("plenary.job")
