@@ -18,8 +18,22 @@ function ColoredPrinter:get_256_color(index)
   -- Standard 16 colors (0-15)
   if index <= 15 then
     local colors = {
-      "#000000", "#800000", "#008000", "#808000", "#000080", "#800080", "#008080", "#c0c0c0",
-      "#808080", "#ff0000", "#00ff00", "#ffff00", "#0000ff", "#ff00ff", "#00ffff", "#ffffff"
+      "#000000",
+      "#800000",
+      "#008000",
+      "#808000",
+      "#000080",
+      "#800080",
+      "#008080",
+      "#c0c0c0",
+      "#808080",
+      "#ff0000",
+      "#00ff00",
+      "#ffff00",
+      "#0000ff",
+      "#ff00ff",
+      "#00ffff",
+      "#ffffff",
     }
     return colors[index + 1]
   end
@@ -30,12 +44,14 @@ function ColoredPrinter:get_256_color(index)
     local r = math.floor(n / 36)
     local g = math.floor((n % 36) / 6)
     local b = n % 6
-    
+
     local function color_value(c)
-      if c == 0 then return 0 end
+      if c == 0 then
+        return 0
+      end
       return 55 + c * 40
     end
-    
+
     return string.format("#%02x%02x%02x", color_value(r), color_value(g), color_value(b))
   end
 
@@ -78,7 +94,7 @@ function ColoredPrinter:setup_highlight_groups()
   -- Add background color groups (40-47, 100-107)
   local bg_colors = {
     ["40"] = "Black",
-    ["41"] = "Red", 
+    ["41"] = "Red",
     ["42"] = "Green",
     ["43"] = "Yellow",
     ["44"] = "Blue",
@@ -87,7 +103,7 @@ function ColoredPrinter:setup_highlight_groups()
     ["47"] = "White",
     ["100"] = "Grey",
     ["101"] = "Red",
-    ["102"] = "Green", 
+    ["102"] = "Green",
     ["103"] = "Yellow",
     ["104"] = "Blue",
     ["105"] = "Magenta",
@@ -98,7 +114,7 @@ function ColoredPrinter:setup_highlight_groups()
   for code, color in pairs(bg_colors) do
     local group_name = "QuicktestAnsiBgColor_" .. code
     vim.cmd(string.format("highlight %s ctermbg=%s guibg=%s", group_name, color:lower(), color))
-    
+
     self.color_groups[code] = group_name
   end
 
@@ -179,6 +195,7 @@ function ColoredPrinter:get_or_create_color_group(fg, bg, styles)
     end
 
     if start_cmd ~= cmd then
+      ---@diagnostic disable-next-line: param-type-mismatch
       local success, err = pcall(vim.cmd, cmd)
       if not success then
         -- Fallback to basic highlight if command fails
@@ -246,32 +263,44 @@ function ColoredPrinter:parse_colors(line)
           elseif code == 21 then
             table.insert(self.current_styles, "undercurl")
           elseif code == 22 then
-            self.current_styles = vim.tbl_filter(function(s) return s ~= "bold" end, self.current_styles)
+            self.current_styles = vim.tbl_filter(function(s)
+              return s ~= "bold"
+            end, self.current_styles)
             -- Reset dim color if it was set
             if self.current_fg == "#808080" then
               self.current_fg = nil
             end
           elseif code == 23 then
-            self.current_styles = vim.tbl_filter(function(s) return s ~= "italic" end, self.current_styles)
+            self.current_styles = vim.tbl_filter(function(s)
+              return s ~= "italic"
+            end, self.current_styles)
           elseif code == 24 then
-            self.current_styles = vim.tbl_filter(function(s) return s ~= "underline" and s ~= "undercurl" end, self.current_styles)
+            self.current_styles = vim.tbl_filter(function(s)
+              return s ~= "underline" and s ~= "undercurl"
+            end, self.current_styles)
           elseif code == 25 then
             -- Reset blink (not supported anyway)
           elseif code == 27 then
-            self.current_styles = vim.tbl_filter(function(s) return s ~= "reverse" end, self.current_styles)
+            self.current_styles = vim.tbl_filter(function(s)
+              return s ~= "reverse"
+            end, self.current_styles)
           elseif code == 28 then
             -- Reset conceal (not supported anyway)
           elseif code == 29 then
-            self.current_styles = vim.tbl_filter(function(s) return s ~= "strikethrough" end, self.current_styles)
+            self.current_styles = vim.tbl_filter(function(s)
+              return s ~= "strikethrough"
+            end, self.current_styles)
           elseif code == 39 then
-            self.current_fg = nil  -- Reset foreground to default
+            self.current_fg = nil -- Reset foreground to default
             -- If bold was auto-added by bright color, remove it
             if self.bright_color_bold then
-              self.current_styles = vim.tbl_filter(function(s) return s ~= "bold" end, self.current_styles)
+              self.current_styles = vim.tbl_filter(function(s)
+                return s ~= "bold"
+              end, self.current_styles)
               self.bright_color_bold = false
             end
           elseif code == 49 then
-            self.current_bg = nil  -- Reset background to default
+            self.current_bg = nil -- Reset background to default
           elseif code >= 30 and code <= 37 then
             self.current_fg = tostring(code)
           elseif code >= 40 and code <= 47 then

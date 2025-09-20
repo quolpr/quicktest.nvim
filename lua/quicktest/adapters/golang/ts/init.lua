@@ -556,7 +556,7 @@ function M.get_table_test_name(bufnr, cursor_pos)
       })
     end
   end
-  
+
   -- Find test definition that contains cursor, then find corresponding test name
   for _, def in ipairs(test_definitions) do
     if curr_row >= def.start_row and curr_row <= def.end_row then
