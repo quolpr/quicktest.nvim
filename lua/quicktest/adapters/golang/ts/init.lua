@@ -534,25 +534,25 @@ function M.get_table_test_name(bufnr, cursor_pos)
   -- Find test name at cursor position by checking test definitions
   local test_names = {}
   local test_definitions = {}
-  
+
   for id, node in query:iter_captures(root, bufnr, 0, -1) do
     local name = query.captures[id]
     local start_row, start_col, end_row, end_col = node:range()
-    
+
     if name == "test.name" then
       table.insert(test_names, {
         text = vim.treesitter.get_node_text(node, bufnr),
         start_row = start_row,
         end_row = end_row,
         start_col = start_col,
-        end_col = end_col
+        end_col = end_col,
       })
     elseif name == "test.definition" then
       table.insert(test_definitions, {
         start_row = start_row,
         end_row = end_row,
         start_col = start_col,
-        end_col = end_col
+        end_col = end_col,
       })
     end
   end
