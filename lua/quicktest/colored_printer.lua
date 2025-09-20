@@ -9,8 +9,43 @@ function ColoredPrinter.new()
   self.current_fg = nil
   self.current_bg = nil
   self.current_styles = {}
+  self.bright_color_bold = false
   self:setup_highlight_groups()
   return self
+end
+
+function ColoredPrinter:get_256_color(index)
+  -- Standard 16 colors (0-15)
+  if index <= 15 then
+    local colors = {
+      "#000000", "#800000", "#008000", "#808000", "#000080", "#800080", "#008080", "#c0c0c0",
+      "#808080", "#ff0000", "#00ff00", "#ffff00", "#0000ff", "#ff00ff", "#00ffff", "#ffffff"
+    }
+    return colors[index + 1]
+  end
+
+  -- 216 color cube (16-231)
+  if index <= 231 then
+    local n = index - 16
+    local r = math.floor(n / 36)
+    local g = math.floor((n % 36) / 6)
+    local b = n % 6
+    
+    local function color_value(c)
+      if c == 0 then return 0 end
+      return 55 + c * 40
+    end
+    
+    return string.format("#%02x%02x%02x", color_value(r), color_value(g), color_value(b))
+  end
+
+  -- Grayscale (232-255)
+  if index <= 255 then
+    local gray = 8 + (index - 232) * 10
+    return string.format("#%02x%02x%02x", gray, gray, gray)
+  end
+
+  return "#ffffff" -- fallback
 end
 
 function ColoredPrinter:setup_highlight_groups()
@@ -40,11 +75,45 @@ function ColoredPrinter:setup_highlight_groups()
     self.color_groups[code] = group_name
   end
 
+  -- Add background color groups (40-47, 100-107)
+  local bg_colors = {
+    ["40"] = "Black",
+    ["41"] = "Red", 
+    ["42"] = "Green",
+    ["43"] = "Yellow",
+    ["44"] = "Blue",
+    ["45"] = "Magenta",
+    ["46"] = "Cyan",
+    ["47"] = "White",
+    ["100"] = "Grey",
+    ["101"] = "Red",
+    ["102"] = "Green", 
+    ["103"] = "Yellow",
+    ["104"] = "Blue",
+    ["105"] = "Magenta",
+    ["106"] = "Cyan",
+    ["107"] = "White",
+  }
+
+  for code, color in pairs(bg_colors) do
+    local group_name = "QuicktestAnsiBgColor_" .. code
+    vim.cmd(string.format("highlight %s ctermbg=%s guibg=%s", group_name, color:lower(), color))
+    
+    self.color_groups[code] = group_name
+  end
+
+  -- Use Normal highlight group directly to ensure proper default colors
+  vim.cmd("highlight default QuicktestAnsiColorDefault guifg=NONE guibg=NONE")
   vim.cmd("highlight default link QuicktestAnsiColorDefault Normal")
   self.color_groups["default"] = "QuicktestAnsiColorDefault"
 end
 
 function ColoredPrinter:get_or_create_color_group(fg, bg, styles)
+  -- If no colors or styles are set, use the default group
+  if not fg and not bg and (#styles == 0) then
+    return self.color_groups["default"]
+  end
+
   local function sanitize(str)
     if str then
       -- Replace # with "hex" and any non-alphanumeric characters with their hex code
@@ -98,7 +167,7 @@ function ColoredPrinter:get_or_create_color_group(fg, bg, styles)
       if bg:match("^#") then
         cmd = cmd .. string.format(" guibg=%s", bg)
       elseif self.color_groups[bg] then
-        local bg_color = vim.fn.synIDattr(vim.fn.synIDtrans(vim.fn.hlID(self.color_groups[bg])), "fg#")
+        local bg_color = vim.fn.synIDattr(vim.fn.synIDtrans(vim.fn.hlID(self.color_groups[bg])), "bg#")
         if bg_color and bg_color ~= "" then
           cmd = cmd .. " guibg=" .. bg_color
         end
@@ -110,7 +179,11 @@ function ColoredPrinter:get_or_create_color_group(fg, bg, styles)
     end
 
     if start_cmd ~= cmd then
-      vim.cmd(cmd)
+      local success, err = pcall(vim.cmd, cmd)
+      if not success then
+        -- Fallback to basic highlight if command fails
+        vim.cmd("highlight " .. group_name)
+      end
     end
 
     self.color_groups[color_key] = group_name
@@ -142,28 +215,76 @@ function ColoredPrinter:parse_colors(line)
         local index = 1
         while index <= #codes do
           local code = tonumber(codes[index])
+          -- Skip empty or invalid codes
+          if not code then
+            index = index + 1
+            goto continue
+          end
           if code == 0 then
             self.current_fg, self.current_bg = nil, nil
             self.current_styles = {}
+            self.bright_color_bold = false
           elseif code == 1 then
             table.insert(self.current_styles, "bold")
+            -- This is explicit bold, not from bright colors
+            self.bright_color_bold = false
+          elseif code == 2 then
+            -- Dim/faint - implement by setting a gray foreground color
+            self.current_fg = "#808080"
           elseif code == 3 then
             table.insert(self.current_styles, "italic")
           elseif code == 4 then
             table.insert(self.current_styles, "underline")
+          elseif code == 5 or code == 6 then
+            -- Blink - not supported in most terminals/Neovim, skip
+          elseif code == 7 then
+            table.insert(self.current_styles, "reverse")
+          elseif code == 8 then
+            -- Conceal - not directly supported as gui attribute, skip
           elseif code == 9 then
             table.insert(self.current_styles, "strikethrough")
+          elseif code == 21 then
+            table.insert(self.current_styles, "undercurl")
+          elseif code == 22 then
+            self.current_styles = vim.tbl_filter(function(s) return s ~= "bold" end, self.current_styles)
+            -- Reset dim color if it was set
+            if self.current_fg == "#808080" then
+              self.current_fg = nil
+            end
+          elseif code == 23 then
+            self.current_styles = vim.tbl_filter(function(s) return s ~= "italic" end, self.current_styles)
+          elseif code == 24 then
+            self.current_styles = vim.tbl_filter(function(s) return s ~= "underline" and s ~= "undercurl" end, self.current_styles)
+          elseif code == 25 then
+            -- Reset blink (not supported anyway)
+          elseif code == 27 then
+            self.current_styles = vim.tbl_filter(function(s) return s ~= "reverse" end, self.current_styles)
+          elseif code == 28 then
+            -- Reset conceal (not supported anyway)
+          elseif code == 29 then
+            self.current_styles = vim.tbl_filter(function(s) return s ~= "strikethrough" end, self.current_styles)
+          elseif code == 39 then
+            self.current_fg = nil  -- Reset foreground to default
+            -- If bold was auto-added by bright color, remove it
+            if self.bright_color_bold then
+              self.current_styles = vim.tbl_filter(function(s) return s ~= "bold" end, self.current_styles)
+              self.bright_color_bold = false
+            end
+          elseif code == 49 then
+            self.current_bg = nil  -- Reset background to default
           elseif code >= 30 and code <= 37 then
             self.current_fg = tostring(code)
           elseif code >= 40 and code <= 47 then
-            self.current_bg = tostring(code - 10)
+            self.current_bg = tostring(code)
           elseif code >= 90 and code <= 97 then
             self.current_fg = tostring(code)
             if not vim.tbl_contains(self.current_styles, "bold") then
               table.insert(self.current_styles, "bold")
             end
+            -- Mark that this bold was auto-added by bright color
+            self.bright_color_bold = true
           elseif code >= 100 and code <= 107 then
-            self.current_bg = tostring(code - 10)
+            self.current_bg = tostring(code)
           elseif code == 38 or code == 48 then
             if codes[index + 1] == "2" then
               if #codes >= index + 4 then
@@ -179,9 +300,24 @@ function ColoredPrinter:parse_colors(line)
                   index = index + 4
                 end
               end
+            elseif codes[index + 1] == "5" then
+              if #codes >= index + 2 then
+                local color_index = tonumber(codes[index + 2])
+                if color_index and color_index >= 0 and color_index <= 255 then
+                  local color_hex = self:get_256_color(color_index)
+                  if code == 38 then
+                    self.current_fg = color_hex
+                  else
+                    self.current_bg = color_hex
+                  end
+                  index = index + 2
+                end
+              end
             end
           end
           index = index + 1
+
+          ::continue::
         end
 
         i = j + 1
