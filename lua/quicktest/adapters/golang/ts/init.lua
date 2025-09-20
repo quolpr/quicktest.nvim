@@ -1,16 +1,6 @@
 -- taken from https://github.com/yanskun/gotests.nvim
 
 local M = {
-  query_tbl_testcase_name = [[ ( literal_value (
-      literal_element (
-        literal_value .(
-          keyed_element
-            (literal_element (identifier))
-            (literal_element (interpreted_string_literal) @test.name)
-         )
-       ) @test.block
-    ))
-  ]],
 
   query_func_name = [[(function_declaration name: (identifier) @func_name)]],
 
@@ -27,6 +17,365 @@ local M = {
       (func_literal) )
     (#eq? @method.name "Run")
   ) @tc.run ]],
+
+  table_tests_list = [[
+    ;; query for list table tests
+    (block
+      (short_var_declaration
+        left: (expression_list
+          (identifier) @test.cases
+        )
+        right: (expression_list
+          (composite_literal
+            (literal_value
+              (literal_element
+                (literal_value
+                  (keyed_element
+                    (literal_element
+                      (identifier) @test.field.name
+                    )
+                    (literal_element
+                      (interpreted_string_literal) @test.name
+                    )
+                  )
+                )
+              ) @test.definition
+            )
+          )
+        )
+      )
+      (for_statement
+        (range_clause
+          left: (expression_list
+            (identifier) @test.case
+          )
+          right: (identifier) @test.cases1 (#eq? @test.cases @test.cases1)
+        )
+        body: (block
+          (expression_statement
+            (call_expression
+              function: (selector_expression
+                operand: (identifier) @test.operand (#match? @test.operand "^[t]$")
+                field: (field_identifier) @test.method (#match? @test.method "^Run$")
+              )
+              arguments: (argument_list
+                (selector_expression
+                  operand: (identifier) @test.case1 (#eq? @test.case @test.case1)
+                  field: (field_identifier) @test.field.name1 (#eq? @test.field.name @test.field.name1)
+                )
+              )
+            )
+          )
+        )
+      )
+    )
+  ]],
+
+  table_tests_loop = [[
+    ;; query for list table tests (wrapped in loop)
+    (for_statement
+      (range_clause
+        left: (expression_list
+          (identifier)
+          (identifier) @test.case
+        )
+        right: (composite_literal
+          type: (slice_type
+            element: (struct_type
+              (field_declaration_list
+                (field_declaration
+                  name: (field_identifier)
+                  type: (type_identifier)
+                )
+              )
+            )
+          )
+          body: (literal_value
+            (literal_element
+              (literal_value
+                (keyed_element
+                  (literal_element
+                    (identifier)
+                  )  @test.field.name
+                  (literal_element
+                    (interpreted_string_literal) @test.name
+                  )
+                )
+              ) @test.definition
+            )
+          )
+        )
+      )
+      body: (block
+        (expression_statement
+          (call_expression
+            function: (selector_expression
+              operand: (identifier)
+              field: (field_identifier)
+            )
+            arguments: (argument_list
+              (selector_expression
+                operand: (identifier)
+                field: (field_identifier) @test.field.name1
+              ) (#eq? @test.field.name @test.field.name1)
+            )
+          )
+        )
+      )
+    )
+  ]],
+
+  table_tests_unkeyed = [[
+    ;; query for table tests with unkeyed struct literals
+    (block
+      (short_var_declaration
+        left: (expression_list 
+          (identifier) @test.cases
+        )
+        right: (expression_list
+          (composite_literal
+            type: (slice_type
+              element: (struct_type
+                (field_declaration_list
+                  (field_declaration
+                    name: (field_identifier) @test.field.name
+                    type: (type_identifier)
+                  )
+                )
+              )
+            )
+            body: (literal_value
+              (literal_element
+                (literal_value
+                  (literal_element
+                    (interpreted_string_literal) @test.name
+                  )
+                ) @test.definition @test.name
+              )
+            )
+          )
+        )
+      )
+      (for_statement
+        (range_clause
+          left: (expression_list
+            (identifier) @test.index
+            (identifier) @test.case
+          )
+          right: (identifier) @test.cases1 (#eq? @test.cases @test.cases1)
+        )
+        body: (block
+          (expression_statement
+            (call_expression
+              function: (selector_expression
+                operand: (identifier) @test.operand (#match? @test.operand "^[t]$")
+                field: (field_identifier) @test.method (#match? @test.method "^Run$")
+              )
+              arguments: (argument_list
+                (selector_expression
+                  operand: (identifier) @test.case1 (#eq? @test.case @test.case1)
+                  field: (field_identifier) @test.field.name1 (#eq? @test.field.name @test.field.name1)
+                )
+              )
+            )
+          )
+        )
+      )
+    )
+  ]],
+
+  table_tests_loop_unkeyed = [[
+    ;; query for table tests with inline structs (not keyed, wrapped in loop)
+    (for_statement
+      (range_clause
+        left: (expression_list
+          (identifier)
+          (identifier) @test.case
+        )
+        right: (composite_literal
+          type: (slice_type
+            element: (struct_type
+              (field_declaration_list
+                (field_declaration
+                  name: (field_identifier) @test.field.name
+                  type: (type_identifier) @field.type (#eq? @field.type "string")
+                )
+              )
+            )
+          )
+          body: (literal_value
+            (literal_element
+              (literal_value
+                (literal_element
+                  (interpreted_string_literal) @test.name
+                )
+                (literal_element)
+              ) @test.definition @test.name
+            )
+          )
+        )
+      )
+      body: (block
+        (expression_statement
+          (call_expression
+            function: (selector_expression
+              operand: (identifier) @test.operand (#match? @test.operand "^[t]$")
+              field: (field_identifier) @test.method (#match? @test.method "^Run$")
+            )
+            arguments: (argument_list
+              (selector_expression
+                operand: (identifier) @test.case1 (#eq? @test.case @test.case1)
+                field: (field_identifier) @test.field.name1 (#eq? @test.field.name @test.field.name1)
+              )
+            )
+          )
+        )
+      )
+    )
+  ]],
+
+  table_tests_inline = [[
+    ;; query for inline table tests (range over slice literal)
+    (for_statement
+      (range_clause
+        left: (expression_list
+          (identifier)
+          (identifier) @test.case
+        )
+        right: (composite_literal
+          type: (slice_type
+            element: (type_identifier)
+          )
+          body: (literal_value
+            (literal_element
+              (literal_value
+                (keyed_element
+                  (literal_element
+                    (identifier) @test.field.name
+                  )
+                  (literal_element
+                    (interpreted_string_literal) @test.name
+                  )
+                )
+              ) @test.definition
+            )
+          )
+        )
+      )
+      body: (block
+        (expression_statement
+          (call_expression
+            function: (selector_expression
+              operand: (identifier) @test.operand (#match? @test.operand "^[t]$")
+              field: (field_identifier) @test.method (#match? @test.method "^Run$")
+            )
+            arguments: (argument_list
+              (selector_expression
+                operand: (identifier) @test.case1 (#eq? @test.case @test.case1)
+                field: (field_identifier) @test.field.name1 (#eq? @test.field.name @test.field.name1)
+              )
+            )
+          )
+        )
+      )
+    )
+  ]],
+
+  -- Map-based table tests where test name is the map key
+  table_tests_map_key = [[
+    ;; query for map-based table tests with string keys
+    (for_statement
+      (range_clause
+        left: (expression_list
+          (identifier) @test.key.name
+          (identifier) @test.case
+        )
+        right: (composite_literal
+          type: (map_type
+            key: (type_identifier) @map.key.type
+            value: (type_identifier)
+          ) (#eq? @map.key.type "string")
+          body: (literal_value
+            (keyed_element
+              (literal_element
+                (interpreted_string_literal) @test.name
+              )
+              (literal_element
+                (literal_value) @test.definition
+              )
+            ) @test.definition
+          )
+        )
+      )
+      body: (block
+        (expression_statement
+          (call_expression
+            function: (selector_expression
+              operand: (identifier) @test.operand (#match? @test.operand "^[t]$")
+              field: (field_identifier) @test.method (#match? @test.method "^Run$")
+            )
+            arguments: (argument_list
+              (identifier) @test.key.name1 (#eq? @test.key.name @test.key.name1)
+            )
+          )
+        )
+      )
+    )
+  ]],
+
+  -- Map-based table tests where test name is a struct field (like tt.name)
+  table_tests_map_field = [[
+    ;; query for map-based table tests using struct field as test name
+    (for_statement
+      (range_clause
+        left: (expression_list
+          (identifier) @test.key.name
+          (identifier) @test.case
+        )
+        right: (composite_literal
+          type: (map_type
+            key: (type_identifier) @map.key.type
+            value: (type_identifier)
+          ) (#eq? @map.key.type "string")
+          body: (literal_value
+            (keyed_element
+              (literal_element
+                (interpreted_string_literal) @test.map.key
+              )
+              (literal_element
+                (literal_value
+                  (keyed_element
+                    (literal_element
+                      (identifier) @test.field.name
+                    )
+                    (literal_element
+                      (interpreted_string_literal) @test.name
+                    )
+                  )
+                ) @test.definition
+              )
+            ) @test.definition
+          )
+        )
+      )
+      body: (block
+        (expression_statement
+          (call_expression
+            function: (selector_expression
+              operand: (identifier) @test.operand (#match? @test.operand "^[t]$")
+              field: (field_identifier) @test.method (#match? @test.method "^Run$")
+            )
+            arguments: (argument_list
+              (selector_expression
+                operand: (identifier) @test.case1 (#eq? @test.case @test.case1)
+                field: (field_identifier) @test.field.name1 (#eq? @test.field.name @test.field.name1)
+              )
+            )
+          )
+        )
+      )
+    )
+  ]],
 }
 
 ---@param bufnr integer
@@ -155,6 +504,68 @@ function M.get_sub_testcase_name(bufnr, cursor_pos)
       is_inside_test = curr_row >= start_row and curr_row <= end_row
     elseif name == "tc.name" and is_inside_test then
       return vim.treesitter.get_node_text(node, bufnr)
+    end
+  end
+
+  return nil
+end
+
+---@param bufnr integer
+---@param cursor_pos integer[]
+---@return string?
+function M.get_table_test_name(bufnr, cursor_pos)
+  local root = get_root_node(bufnr)
+  if not root then
+    return
+  end
+
+  local all_queries = M.table_tests_list
+    .. M.table_tests_loop
+    .. M.table_tests_unkeyed
+    .. M.table_tests_loop_unkeyed
+    .. M.table_tests_inline
+    .. M.table_tests_map_key
+    .. M.table_tests_map_field
+  local query = vim.treesitter.query.parse("go", all_queries)
+  local curr_row, _ = unpack(cursor_pos)
+  -- from 1-based to 0-based indexing
+  curr_row = curr_row - 1
+
+  -- Find test name at cursor position by checking test definitions
+  local test_names = {}
+  local test_definitions = {}
+
+  for id, node in query:iter_captures(root, bufnr, 0, -1) do
+    local name = query.captures[id]
+    local start_row, start_col, end_row, end_col = node:range()
+
+    if name == "test.name" then
+      table.insert(test_names, {
+        text = vim.treesitter.get_node_text(node, bufnr),
+        start_row = start_row,
+        end_row = end_row,
+        start_col = start_col,
+        end_col = end_col,
+      })
+    elseif name == "test.definition" then
+      table.insert(test_definitions, {
+        start_row = start_row,
+        end_row = end_row,
+        start_col = start_col,
+        end_col = end_col,
+      })
+    end
+  end
+  
+  -- Find test definition that contains cursor, then find corresponding test name
+  for _, def in ipairs(test_definitions) do
+    if curr_row >= def.start_row and curr_row <= def.end_row then
+      -- Find test name within this definition
+      for _, name in ipairs(test_names) do
+        if name.start_row >= def.start_row and name.end_row <= def.end_row then
+          return name.text
+        end
+      end
     end
   end
 
