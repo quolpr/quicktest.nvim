@@ -1,4 +1,5 @@
 local api = vim.api
+local uv = vim.uv or vim.loop
 local notify = require("quicktest.notify")
 local a = require("plenary.async")
 local u = require("plenary.async.util")
@@ -155,7 +156,7 @@ function M.run(adapter, params, config, opts)
   local printer = colorized_printer.new()
 
   --- @type CmdJob
-  local job = { id = math.random(10000000000000000), started_at = vim.uv.now(), status = "running" }
+  local job = { id = math.random(10000000000000000), started_at = uv.now(), status = "running" }
   current_job = job
 
   local is_running = function()
@@ -163,7 +164,7 @@ function M.run(adapter, params, config, opts)
   end
 
   local print_buf_status = function(buf, line_count)
-    local passedTime = vim.loop.now() - job.started_at
+    local passedTime = uv.now() - job.started_at
     if job.finished_at then
       passedTime = job.finished_at - job.started_at
     end
@@ -322,7 +323,7 @@ function M.run(adapter, params, config, opts)
 
       if result.type == "exit" then
         job.exit_code = result.code
-        job.finished_at = vim.uv.now()
+        job.finished_at = uv.now()
         job.status = "finished"
 
         if adapter.after_run then
@@ -486,7 +487,7 @@ function M.kill_current_run()
     vim.system({ "kill", tostring(current_job.pid) }):wait()
 
     job.status = "canceled"
-    job.finished_at = vim.uv.now()
+    job.finished_at = uv.now()
   end
 end
 
