@@ -1,5 +1,11 @@
 local api = vim.api
 
+---@class ColoredPrinter
+---@field color_groups? table<string, string>
+---@field current_fg? string
+---@field current_bg? string
+---@field current_styles? string[]
+---@field bright_color_bold? boolean
 local ColoredPrinter = {}
 ColoredPrinter.__index = ColoredPrinter
 
@@ -14,6 +20,7 @@ function ColoredPrinter.new()
   return self
 end
 
+---@param index integer
 function ColoredPrinter:get_256_color(index)
   -- Standard 16 colors (0-15)
   if index <= 15 then
@@ -52,13 +59,13 @@ function ColoredPrinter:get_256_color(index)
       return 55 + c * 40
     end
 
-    return string.format("#%02x%02x%02x", color_value(r), color_value(g), color_value(b))
+    return ("#%02x%02x%02x"):format(color_value(r), color_value(g), color_value(b))
   end
 
   -- Grayscale (232-255)
   if index <= 255 then
     local gray = 8 + (index - 232) * 10
-    return string.format("#%02x%02x%02x", gray, gray, gray)
+    return ("#%02x%02x%02x"):format(gray, gray, gray)
   end
 
   return "#ffffff" -- fallback
@@ -86,7 +93,8 @@ function ColoredPrinter:setup_highlight_groups()
 
   for code, color in pairs(basic_colors) do
     local group_name = "QuicktestAnsiColor_" .. code
-    vim.cmd(string.format("highlight %s ctermfg=%s guifg=%s", group_name, color:lower(), color))
+    api.nvim_set_hl(0, group_name, { ctermfg = color:lower(), fg = color })
+    -- vim.cmd(("highlight %s ctermfg=%s guifg=%s"):format(group_name, color:lower(), color))
 
     self.color_groups[code] = group_name
   end
@@ -113,46 +121,55 @@ function ColoredPrinter:setup_highlight_groups()
 
   for code, color in pairs(bg_colors) do
     local group_name = "QuicktestAnsiBgColor_" .. code
-    vim.cmd(string.format("highlight %s ctermbg=%s guibg=%s", group_name, color:lower(), color))
+    api.nvim_set_hl(0, group_name, { ctermbg = color:lower(), bg = color })
+    -- vim.cmd(("highlight %s ctermbg=%s guibg=%s"):format(group_name, color:lower(), color))
 
     self.color_groups[code] = group_name
   end
 
   -- Use Normal highlight group directly to ensure proper default colors
   vim.cmd("highlight default QuicktestAnsiColorDefault guifg=NONE guibg=NONE")
-  vim.cmd("highlight default link QuicktestAnsiColorDefault Normal")
+  api.nvim_set_hl(0, "QuicktestAnsiColorDefault", { link = "Normal" })
+  -- vim.cmd("highlight default link QuicktestAnsiColorDefault Normal")
   self.color_groups["default"] = "QuicktestAnsiColorDefault"
 end
 
+---@param fg string
+---@param bg string
+---@param styles string[]
+---@return string
 function ColoredPrinter:get_or_create_color_group(fg, bg, styles)
   -- If no colors or styles are set, use the default group
-  if not fg and not bg and (#styles == 0) then
+  if not (fg or bg) and vim.tbl_isempty(styles) then
     return self.color_groups["default"]
   end
 
+  ---@param str string
   local function sanitize(str)
-    if str then
-      -- Replace # with "hex" and any non-alphanumeric characters with their hex code
-      return str:gsub("#", ""):gsub("[^%w]", function(c)
-        return string.format("%02x", string.byte(c))
-      end)
+    if not str then
+      return ""
     end
-    return ""
+
+    -- Replace # with "hex" and any non-alphanumeric characters with their hex code
+    return str:gsub("#", ""):gsub("[^%w]", function(c) ---@param c string
+      return ("%02x"):format(c:byte())
+    end)
   end
 
+  ---@type table<string, boolean>
   local unique_styles = {}
   for _, style in ipairs(styles) do
     unique_styles[style] = true
   end
-  unique_styles = vim.tbl_keys(unique_styles)
+
   -- sort and uniqize the styles
-  styles = vim.tbl_filter(function(s)
+  styles = vim.tbl_filter(function(s) ---@param s string
     return s ~= ""
-  end, unique_styles)
+  end, vim.tbl_keys(unique_styles))
   table.sort(styles)
 
   local color_key = table.concat(
-    vim.tbl_filter(function(s)
+    vim.tbl_filter(function(s) ---@param s string
       return s ~= ""
     end, { sanitize(fg), sanitize(bg), table.concat(styles, "_") }),
     "_"
@@ -161,7 +178,7 @@ function ColoredPrinter:get_or_create_color_group(fg, bg, styles)
   if not self.color_groups[color_key] then
     local group_name = "QuicktestAnsiColor"
 
-    if #color_key > 0 then
+    if color_key:len() > 0 then
       group_name = group_name .. "_" .. color_key
     end
 
@@ -170,33 +187,33 @@ function ColoredPrinter:get_or_create_color_group(fg, bg, styles)
 
     if fg then
       if fg:match("^#") then
-        cmd = cmd .. string.format(" guifg=%s", fg)
+        cmd = ("%s guifg=%s"):format(cmd, fg)
       elseif self.color_groups[fg] then
         local fg_color = vim.fn.synIDattr(vim.fn.synIDtrans(vim.fn.hlID(self.color_groups[fg])), "fg#")
         if fg_color and fg_color ~= "" then
-          cmd = cmd .. " guifg=" .. fg_color
+          cmd = ("%s guifg=%s"):format(cmd, fg_color)
         end
       end
     end
 
     if bg then
       if bg:match("^#") then
-        cmd = cmd .. string.format(" guibg=%s", bg)
+        cmd = ("%s guibg=%s"):format(cmd, bg)
       elseif self.color_groups[bg] then
         local bg_color = vim.fn.synIDattr(vim.fn.synIDtrans(vim.fn.hlID(self.color_groups[bg])), "bg#")
         if bg_color and bg_color ~= "" then
-          cmd = cmd .. " guibg=" .. bg_color
+          cmd = ("%s guibg=%s"):format(cmd, bg_color)
         end
       end
     end
 
-    if #styles > 0 then
+    if not vim.tbl_isempty(styles) then
       cmd = cmd .. " gui=" .. table.concat(styles, ",")
     end
 
     if start_cmd ~= cmd then
       ---@diagnostic disable-next-line: param-type-mismatch
-      local success, err = pcall(vim.cmd, cmd)
+      local success = pcall(vim.cmd, cmd)
       if not success then
         -- Fallback to basic highlight if command fails
         vim.cmd("highlight " .. group_name)
@@ -208,6 +225,7 @@ function ColoredPrinter:get_or_create_color_group(fg, bg, styles)
   return self.color_groups[color_key]
 end
 
+---@param line string
 function ColoredPrinter:parse_colors(line)
   local result = {}
   local highlights = {}
@@ -222,7 +240,7 @@ function ColoredPrinter:parse_colors(line)
     color_start = #result
   end
 
-  while i <= #line do
+  while i <= line:len() do
     if line:sub(i, i) == "\27" and line:sub(i + 1, i + 1) == "[" then
       local j = line:find("m", i + 2)
       if j then
@@ -321,17 +339,18 @@ function ColoredPrinter:parse_colors(line)
                 local g = tonumber(codes[index + 3])
                 local b = tonumber(codes[index + 4])
                 if r and g and b then
+                  local hex = ("#%02x%02x%02x"):format(r, g, b)
                   if code == 38 then
-                    self.current_fg = string.format("#%02x%02x%02x", r, g, b)
+                    self.current_fg = hex
                   else
-                    self.current_bg = string.format("#%02x%02x%02x", r, g, b)
+                    self.current_bg = hex
                   end
                   index = index + 4
                 end
               end
             elseif codes[index + 1] == "5" then
               if #codes >= index + 2 then
-                local color_index = tonumber(codes[index + 2])
+                local color_index = tonumber(codes[index + 2]) ---@cast color_index integer
                 if color_index and color_index >= 0 and color_index <= 255 then
                   local color_hex = self:get_256_color(color_index)
                   if code == 38 then
@@ -369,19 +388,19 @@ local function get_highlight_def(group)
     return "highlight AnsiColor"
   end
 
-  local hl = vim.api.nvim_get_hl_by_name(group, true)
-  local hl_string = string.format("highlight %s", group)
+  local hl = api.nvim_get_hl(0, { name = group })
+  local hl_string = ("highlight %s"):format(group)
 
-  if hl.foreground then
-    hl_string = hl_string .. string.format(" guifg=#%06x", hl.foreground)
+  if hl.fg then
+    hl_string = ("%s guifg=#%06x"):format(hl_string, hl.fg)
   end
 
-  if hl.background then
-    hl_string = hl_string .. string.format(" guibg=#%06x", hl.background)
+  if hl.bg then
+    hl_string = ("%s guibg=#%06x"):format(hl_string, hl.bg)
   end
 
-  if hl.special then
-    hl_string = hl_string .. string.format(" guisp=#%06x", hl.special)
+  if hl.sp then
+    hl_string = ("%s guisp=#%06x"):format(hl_string, hl.sp)
   end
 
   local gui_attrs = {}
@@ -391,13 +410,14 @@ local function get_highlight_def(group)
     end
   end
 
-  if #gui_attrs > 0 then
-    hl_string = hl_string .. " gui=" .. table.concat(gui_attrs, ",")
+  if not vim.tbl_isempty(gui_attrs) then
+    hl_string = ("%s gui=%s"):format(hl_string, table.concat(gui_attrs, ","))
   end
 
   return hl_string
 end
 
+---@param buf integer
 function ColoredPrinter:set_next_lines(lines, buf, lines_count)
   local parsed_lines = {}
   local parsed_highlights = {}
@@ -414,7 +434,8 @@ function ColoredPrinter:set_next_lines(lines, buf, lines_count)
     for _, h in ipairs(hl) do
       -- print("[" .. h.start .. "," .. h.end_ .. ")", get_highlight_def(h.group))
 
-      api.nvim_buf_add_highlight(buf, -1, h.group, lines_count - 1 + i, h.start, h.end_)
+      vim.hl.range(buf, -1, h.group, { lines_count -1 + i, h.start }, { lines_count -1 + i, h.end_ })
+      -- api.nvim_buf_add_highlight(buf, -1, h.group, lines_count - 1 + i, h.start, h.end_)
     end
   end
 
@@ -428,7 +449,7 @@ function ColoredPrinter:debug_print_colors(line)
   print("Original line:", line)
   print("Parsed line:", plain_line)
   for _, hl in ipairs(highlights) do
-    print("[" .. hl.start .. "," .. hl.end_ .. ")", get_highlight_def(hl.group))
+    print(("[%s,%s)"):format(hl.start, hl.end_), get_highlight_def(hl.group))
   end
 end
 
