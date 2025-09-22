@@ -1,10 +1,10 @@
 local M = {}
 
 ---@param msg string
----@param level number
+---@param level vim.log.levels
 local function notify(msg, level)
   vim.schedule(function()
-    vim.api.nvim_notify(msg, level, { title = "Quicktest" })
+    vim.notify(msg, level, { title = "Quicktest" })
   end)
 end
 
