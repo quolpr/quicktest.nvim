@@ -434,7 +434,7 @@ function ColoredPrinter:set_next_lines(lines, buf, lines_count)
     for _, h in ipairs(hl) do
       -- print("[" .. h.start .. "," .. h.end_ .. ")", get_highlight_def(h.group))
 
-      vim.hl.range(buf, -1, h.group, { lines_count -1 + i, h.start }, { lines_count -1 + i, h.end_ })
+      vim.hl.range(buf, -1, h.group, { lines_count - 1 + i, h.start }, { lines_count - 1 + i, h.end_ })
       -- api.nvim_buf_add_highlight(buf, -1, h.group, lines_count - 1 + i, h.start, h.end_)
     end
   end
