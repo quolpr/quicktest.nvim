@@ -128,8 +128,9 @@ function ColoredPrinter:setup_highlight_groups()
   end
 
   -- Use Normal highlight group directly to ensure proper default colors
-  vim.cmd("highlight default QuicktestAnsiColorDefault guifg=NONE guibg=NONE")
-  api.nvim_set_hl(0, "QuicktestAnsiColorDefault", { link = "Normal" })
+  api.nvim_set_hl(0, "QuicktestAnsiColorDefault", { default = true, fg = "NONE", bg = "NONE" })
+  api.nvim_set_hl(0, "QuicktestAnsiColorDefault", { default = true, link = "Normal" })
+  -- vim.cmd("highlight default QuicktestAnsiColorDefault guifg=NONE guibg=NONE")
   -- vim.cmd("highlight default link QuicktestAnsiColorDefault Normal")
   self.color_groups["default"] = "QuicktestAnsiColorDefault"
 end

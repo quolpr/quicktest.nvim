@@ -289,13 +289,7 @@ function M.run(adapter, params, config, opts)
             end
 
             for i, _ in ipairs(errored_lines) do
-              vim.highlight.range(
-                buf,
-                stderr_ns,
-                "DiagnosticError",
-                { i + lines_count - 2, 0 },
-                { i + lines_count - 2, -1 }
-              )
+              vim.hl.range(buf, stderr_ns, "DiagnosticError", { i + lines_count - 2, 0 }, { i + lines_count - 2, -1 })
             end
 
             print_buf_status(buf, lines_count + new_lines_count)
