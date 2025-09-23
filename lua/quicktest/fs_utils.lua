@@ -28,6 +28,7 @@ M.path = (function()
     return path
   end
 
+  ---@return string|false
   local function exists(filename)
     local stat = uv.fs_stat(filename)
     return stat and stat.type or false

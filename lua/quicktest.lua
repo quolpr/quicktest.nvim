@@ -1,6 +1,7 @@
 -- main module file
 local module = require("quicktest.module")
 
+---@type QuicktestConfig
 local config = {
   adapters = {},
   default_win_mode = "split",
@@ -19,70 +20,84 @@ local config = {
   },
 }
 
----@class MyModule
+---@class Quicktest
 local M = {}
 
 --- @type QuicktestConfig
 M.config = config
 
----@param args QuicktestConfig?
-M.setup = function(args)
-  M.config = vim.tbl_deep_extend("force", M.config, args or {})
+---@param args? QuicktestConfig
+function M.setup(args)
+  args = args or {}
+  M.config = vim.tbl_deep_extend("force", M.config, args)
 end
 
-M.current_win_mode = function()
+function M.current_win_mode()
   return module.current_win_mode(M.config.default_win_mode)
 end
 
 --- @param mode WinModeWithoutAuto
-M.open_win = function(mode)
+function M.open_win(mode)
   return module.try_open_win(mode)
 end
 
 --- @param mode WinModeWithoutAuto
-M.close_win = function(mode)
+function M.close_win(mode)
   return module.try_close_win(mode)
 end
 
 --- @param mode WinModeWithoutAuto
-M.toggle_win = function(mode)
+function M.toggle_win(mode)
   return module.toggle_win(mode)
 end
 
---- @param mode WinMode?
-M.run_previous = function(mode)
-  return module.run_previous(M.config, mode or "auto")
+--- @param mode? WinMode
+function M.run_previous(mode)
+  mode = mode or "auto"
+  return module.run_previous(M.config, mode)
 end
 
---- @param mode WinMode?
---- @param adapter Adapter?
---- @param opts AdapterRunOpts?
-M.run_line = function(mode, adapter, opts)
-  return module.prepare_and_run(M.config, "line", mode or "auto", adapter or "auto", opts or {})
+--- @param mode? WinMode
+--- @param adapter? Adapter
+--- @param opts? AdapterRunOpts
+function M.run_line(mode, adapter, opts)
+  mode = mode or "auto"
+  adapter = adapter or "auto"
+  opts = opts or {}
+  return module.prepare_and_run(M.config, "line", mode, adapter, opts)
 end
 
---- @param mode WinMode?
---- @param adapter Adapter?
---- @param opts AdapterRunOpts?
-M.run_file = function(mode, adapter, opts)
-  return module.prepare_and_run(M.config, "file", mode or "auto", adapter or "auto", opts or {})
+--- @param mode? WinMode
+--- @param adapter? Adapter
+--- @param opts? AdapterRunOpts
+function M.run_file(mode, adapter, opts)
+  mode = mode or "auto"
+  adapter = adapter or "auto"
+  opts = opts or {}
+  return module.prepare_and_run(M.config, "file", mode, adapter, opts)
 end
 
---- @param mode WinMode?
---- @param adapter Adapter?
---- @param opts AdapterRunOpts?
-M.run_dir = function(mode, adapter, opts)
-  return module.prepare_and_run(M.config, "dir", mode or "auto", adapter or "auto", opts or {})
+--- @param mode? WinMode
+--- @param adapter? Adapter
+--- @param opts? AdapterRunOpts
+function M.run_dir(mode, adapter, opts)
+  mode = mode or "auto"
+  adapter = adapter or "auto"
+  opts = opts or {}
+  return module.prepare_and_run(M.config, "dir", mode, adapter, opts)
 end
 
---- @param mode WinMode?
---- @param adapter Adapter?
---- @param opts AdapterRunOpts?
-M.run_all = function(mode, adapter, opts)
-  return module.prepare_and_run(M.config, "all", mode or "auto", adapter or "auto", opts or {})
+--- @param mode? WinMode
+--- @param adapter? Adapter
+--- @param opts? AdapterRunOpts
+function M.run_all(mode, adapter, opts)
+  mode = mode or "auto"
+  adapter = adapter or "auto"
+  opts = opts or {}
+  return module.prepare_and_run(M.config, "all", mode, adapter, opts)
 end
 
-M.cancel_current_run = function()
+function M.cancel_current_run()
   module.kill_current_run()
 end
 
