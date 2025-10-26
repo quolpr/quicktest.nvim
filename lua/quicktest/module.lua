@@ -1,4 +1,5 @@
 local api = vim.api
+local uv = vim.uv or vim.loop
 local notify = require("quicktest.notify")
 local a = require("plenary.async")
 local u = require("plenary.async.util")
@@ -9,15 +10,20 @@ local p = require("plenary.path")
 local M = {}
 
 ---@alias Adapter string | "auto"
----@alias WinMode 'popup' | 'split' | 'auto'
----@alias WinModeWithoutAuto 'popup' | 'split
+---@alias WinMode "popup" | "split" | "auto"
+---@alias WinModeWithoutAuto "popup" | "split
 
 ---@class AdapterRunOpts
----@field additional_args string[]?
+---@field additional_args? string[]
 
----@alias CmdData {type: 'stdout', raw: string, output: string?, decoded: any} | {type: 'stderr', raw: string, output: string?, decoded: any} | {type: 'exit', code: number}
+---@class CmdData
+---@field type "stdout" | "stderr" | "exit"
+---@field raw string
+---@field output? string
+---@field decoded any
+---@field code? number
 
----@alias RunType 'line' | 'file' | 'dir' | 'all'
+---@alias RunType "line" | "file" | "dir" | "all"
 
 ---@class QuicktestAdapter
 ---@field name string
@@ -26,7 +32,7 @@ local M = {}
 ---@field build_dir_run_params fun(bufnr: integer, cursor_pos: integer[], opts: AdapterRunOpts): any
 ---@field build_all_run_params fun(bufnr: integer, cursor_pos: integer[], opts: AdapterRunOpts): any
 ---@field run fun(params: any, send: fun(data: CmdData)): number
----@field after_run fun(params: any, results: CmdData)?
+---@field after_run nil|fun(params: any, results: CmdData)
 ---@field title fun(params: any): string
 ---@field is_enabled fun(bufnr: number, type: RunType): boolean
 
@@ -35,13 +41,31 @@ local M = {}
 ---@field default_win_mode WinModeWithoutAuto
 ---@field use_builtin_colorizer boolean
 
----@alias JobStatus 'running' | 'finished' | 'canceled'
----@alias CmdJob {id: number, started_at: number, finished_at?: number, pid: number?, status: JobStatus, exit_code?: number}
+---@alias JobStatus "running" | "finished" | "canceled"
+
+---@class CmdJob
+---@field id number
+---@field started_at integer
+---@field finished_at? integer
+---@field pid? number
+---@field status JobStatus
+---@field exit_code? integer
+
+---@class PreviousRun
+---@field type string
+---@field adapter_name string
+---@field bufname string
+---@field cursor_pos integer[]
+
+---@alias PreviousRuns table<string, PreviousRun>
+
 ---@type CmdJob | nil
 local current_job = nil
---- @type {[string]: {type: string, adapter_name: string, bufname: string, cursor_pos: integer[]}} | nil
+
+---@type nil | PreviousRuns
 local previous_run = nil
 
+---@return PreviousRuns
 local function load_previous_run()
   local config_path = p:new(vim.fn.stdpath("data"), "quicktest_previous_runs.json")
 
@@ -59,7 +83,7 @@ end
 
 local function save_previous_run()
   if previous_run then
-    ---@diagnostic disable-next-line: missing-parameter
+    ---@diagnostic disable-next-line:missing-parameter
     a.run(function()
       local config_path = p:new(vim.fn.stdpath("data"), "quicktest_previous_runs.json")
       local current_data = load_previous_run()
@@ -131,23 +155,22 @@ local stderr_ns = vim.api.nvim_create_namespace("quicktest_stderr")
 --- @param opts AdapterRunOpts
 function M.run(adapter, params, config, opts)
   if current_job then
-    if current_job.pid then
-      vim.system({ "kill", tostring(current_job.pid) }):wait()
-      current_job = nil
-    else
+    if not current_job.pid then
       return notify.warn("Already running")
     end
+    vim.system({ "kill", tostring(current_job.pid) }):wait()
+    current_job = nil
   end
 
   --- @param buf integer
   --- @param start integer
-  --- @param finish number
+  --- @param finish integer
   --- @param strict_indexing boolean
   --- @param replacements string[]
   local set_ansi_lines = function(buf, start, finish, strict_indexing, replacements)
     local new_lines = {}
     for i, line in ipairs(replacements) do
-      new_lines[i] = string.gsub(line, "[\27\155][][()#;?%d]*[A-PRZcf-ntqry=><~]", "")
+      new_lines[i] = line:gsub("[\27\155][][()#;?%d]*[A-PRZcf-ntqry=><~]", "")
     end
     vim.api.nvim_buf_set_lines(buf, start, finish, strict_indexing, new_lines)
   end
@@ -155,7 +178,7 @@ function M.run(adapter, params, config, opts)
   local printer = colorized_printer.new()
 
   --- @type CmdJob
-  local job = { id = math.random(10000000000000000), started_at = vim.uv.now(), status = "running" }
+  local job = { id = math.random(10000000000000000), started_at = uv.now(), status = "running" }
   current_job = job
 
   local is_running = function()
@@ -163,12 +186,12 @@ function M.run(adapter, params, config, opts)
   end
 
   local print_buf_status = function(buf, line_count)
-    local passedTime = vim.loop.now() - job.started_at
+    local passedTime = uv.now() - job.started_at
     if job.finished_at then
       passedTime = job.finished_at - job.started_at
     end
 
-    local time_display = string.format("%.2f", passedTime / 1000) .. "s"
+    local time_display = ("%.2f"):format(passedTime / 1000) .. "s"
 
     vim.api.nvim_buf_clear_namespace(buf, status_ns, 0, -1)
 
@@ -179,15 +202,17 @@ function M.run(adapter, params, config, opts)
       hl_group = "DiagnosticInfo"
     else
       if job.status == "canceled" then
-        line = "Canceled " .. time_display
+        line = "Canceled "
         hl_group = "DiagnosticWarn"
       elseif job.exit_code ~= 0 then
-        line = "Failed " .. time_display
+        line = "Failed "
         hl_group = "DiagnosticError"
       else
-        line = "Passed " .. time_display
+        line = "Passed "
         hl_group = "DiagnosticOk"
       end
+
+      line = line .. time_display
     end
 
     vim.api.nvim_buf_set_lines(buf, line_count - 1, line_count, false, {
@@ -264,13 +289,7 @@ function M.run(adapter, params, config, opts)
             end
 
             for i, _ in ipairs(errored_lines) do
-              vim.highlight.range(
-                buf,
-                stderr_ns,
-                "DiagnosticError",
-                { i + lines_count - 2, 0 },
-                { i + lines_count - 2, -1 }
-              )
+              vim.hl.range(buf, stderr_ns, "DiagnosticError", { i + lines_count - 2, 0 }, { i + lines_count - 2, -1 })
             end
 
             print_buf_status(buf, lines_count + new_lines_count)
@@ -322,7 +341,7 @@ function M.run(adapter, params, config, opts)
 
       if result.type == "exit" then
         job.exit_code = result.code
-        job.finished_at = vim.uv.now()
+        job.finished_at = uv.now()
         job.status = "finished"
 
         if adapter.after_run then
@@ -386,7 +405,7 @@ local function get_adapter_and_params(config, type, adapter_name, current_buffer
 end
 
 --- @param config QuicktestConfig
---- @param type 'line' | 'file' | 'dir' | 'all'
+--- @param type "line" | "file" | "dir" | "all"
 --- @param mode WinMode
 --- @param adapter_name Adapter
 --- @param opts AdapterRunOpts
@@ -486,7 +505,7 @@ function M.kill_current_run()
     vim.system({ "kill", tostring(current_job.pid) }):wait()
 
     job.status = "canceled"
-    job.finished_at = vim.uv.now()
+    job.finished_at = uv.now()
   end
 end
 
